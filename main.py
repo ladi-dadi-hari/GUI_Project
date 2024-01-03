@@ -5,6 +5,13 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import vpython as vp
 from vpython import *
+from time import *
+import numpy as np
+import math
+import serial
+import datetime
+import json
+
 
 
 
@@ -12,6 +19,8 @@ def show_frame(frame):
     frame.tkraise()
 
 def open_scene():
+    ser = serial.Serial('com10', 115200)
+
     # 3D-Visualisierungs-Frame
     frame_3d = tk.Frame(root, bg='white')
     frame_3d.place(relwidth=1, relheight=1)
@@ -86,11 +95,78 @@ def open_scene():
                       ],
                      pos=vec(0, 0, 0), origin=vec(0, 0, 0))
 
+    try:
+        while True:
+            # Daten vom COM-Port lesen
+            line = ser.readline().decode('utf-8').strip()
+
+            # Überprüfen, ob die Daten im JSON-Format vorliegen
+            if line.startswith('{') and line.endswith('}'):
+                try:
+                    data = json.loads(line)
+
+                    if 'euler' in data:
+                        euler = np.array(data['euler'])
+                        print(f"euler: x: {euler[0]}, y: {euler[1]}, z: {euler[2]}")
+
+                    elif 'quaternions' in data:
+                        quaternions = np.array(data['quaternions'])
+                        print(f"quat: w: {quaternions[0]}, x: {quaternions[1]}, y: {quaternions[2]}, z: {quaternions[3]}")
+
+                except json.JSONDecodeError as e:
+                    print(f"Fehler beim Dekodieren der JSON-Daten: {e}")
+            else:
+                print(f"Falsches Datenformat: {line}")
+    except KeyboardInterrupt:
+        # Das Programm beenden, wenn Strg+C gedrückt wird
+        ser.close()
+        print("Programm beendet.")
+
+
+    # # Visualization
+    #
+    # while (True):
+    #     while (ser.inWaiting() == 0):
+    #         pass
+    #     try:
+    #         # Zeit:
+    #         #local_time = time.localtime()
+    #         #dt = datetime.datetime.now()
+    #         # Konvertierung der sensorwerte.
+    #         # Sensorwerte kommen in einer Reihen von Bytes an.
+    #         dataPacket = ser.readline()
+    #         dataPacket = str(dataPacket, 'utf-8')
+    #         print(dataPacket)
+    #         # Separieren der Sensor-Werte
+    #         splitPacket = dataPacket.split(",")
+    #         q0 = float(splitPacket[1])  # w
+    #         q1 = float(splitPacket[2])  # x
+    #         q2 = float(splitPacket[3])  # y
+    #         q3 = float(splitPacket[4])  # z
+    #
+    #         # Berechnungen von Winkeln
+    #         roll = -math.atan2(2 * (q0 * q1 + q2 * q3), 1 - 2 * (q1 * q1 + q2 * q2))
+    #         pitch = math.asin(2 * (q0 * q2 - q3 * q1))
+    #         yaw = -math.atan2(2 * (q0 * q3 + q1 * q2), 1 - 2 * (q2 * q2 + q3 * q3)) - np.pi / 2
+    #         rate(50)
+    #         k = vector(cos(yaw) * cos(pitch), sin(pitch), sin(yaw) * cos(pitch))
+    #         y = vector(0, 1, 0)
+    #         s = cross(k, y)
+    #         v = cross(s, k)
+    #         vrot = v * cos(roll) + cross(k, v) * sin(roll)
+    #         # Die Winkeln an das Objekt anpassen
+    #         fhObj.axis = k
+    #         fhObj.up = vrot
+    #
+    #     except Exception as e:
+    #         print(e)
+
+
 # Erstellen Sie sechs Subplots
-fig, axs = plt.subplots(2, 3, figsize=(10, 6), sharex=True, sharey=True)
+fig, axs = plt.subplots(3, 3, figsize=(10, 6), sharex=True, sharey=True)
 
 # Erstellen Sie eine Liste von Farben für die Plots
-colors = ['red', 'blue', 'green', 'orange', 'purple', 'brown']
+colors = ['red', 'red', 'red', 'green', 'green', 'green','blue', 'blue', 'blue']
 
 # Füllen Sie jeden Subplot mit Dummy-Daten
 for i, ax in enumerate(axs.flat):
@@ -98,6 +174,8 @@ for i, ax in enumerate(axs.flat):
     y = [i * j for j in x]
     ax.plot(x, y, color=colors[i])
     ax.set_title(f'Plot {i+1}')
+
+#ax.set_title(f'Accelerometer x')
 
 # Fügen Sie einen gemeinsamen Titel hinzu
 fig.suptitle('2D-Koordinatensysteme', fontsize=16)
