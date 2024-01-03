@@ -100,24 +100,78 @@ def open_scene():
             # Daten vom COM-Port lesen
             line = ser.readline().decode('utf-8').strip()
 
+            if not line:
+                continue
+
             # Überprüfen, ob die Daten im JSON-Format vorliegen
-            if line.startswith('{') and line.endswith('}'):
-                try:
-                    data = json.loads(line)
 
-                    if 'euler' in data:
-                        #euler = np.array(data['euler'])
-                        #print(f"euler: x: {euler[0]}, y: {euler[1]}, z: {euler[2]}")
-                        print(line)
+            try:
+                data = json.loads(line)
 
-                    elif 'quaternions' in data:
-                        quaternions = np.array(data['quaternions'])
-                        print(f"quat: w: {quaternions[0]}, x: {quaternions[1]}, y: {quaternions[2]}, z: {quaternions[3]}")
+                if 'euler' in data:
+                    euler = np.array(data['euler'])
+                    print(f"euler: x: {euler[0]}, y: {euler[1]}, z: {euler[2]}")
+                    #print(line)
 
-                except json.JSONDecodeError as e:
-                    print(f"Fehler beim Dekodieren der JSON-Daten: {e}")
-            else:
-                print(f"Falsches Datenformat: {line}")
+                elif 'quaternions' in data:
+                    scale = (1.0 / (1 << 14))
+                    quaternions = np.array(data['quaternions'])
+                    print(f"quat: w: {quaternions[0]}, x: {quaternions[1]}, y: {quaternions[2]}, z: {quaternions[3]}")
+
+                    qw = quaternions[0]*scale
+                    qx = quaternions[1]*scale
+                    qy = quaternions[2]*scale
+                    qz = quaternions[3]*scale
+
+                    sqw = qw * qw
+                    sqx = qx * qx
+                    sqy = qy * qy
+                    sqz = qz * qz
+
+                    roll = 0
+                    yaw = 0
+                    pitch = 0
+
+                    unitLength = qw**2 + qx**2 + qy**2 + qz**2
+                    abcd = qw*qx + qy*qz
+
+                    if(unitLength != 0):
+                        if(abcd > (0.4995)*unitLength):
+                            yaw = 2 * atan2(qy, qw) + 45
+                            pitch = np.pi/2
+                            roll = 0
+                        elif(abcd < (-0.4995)*unitLength):
+                            yaw = -2*atan2(qy, qw) + 45
+                            pitch = -np.pi/2
+                            roll = 0
+                        else:
+                            adbc = qw*qz - qx*qy
+                            acbd = qw*qy - qx*qz
+                            yaw = -atan2(2*adbc, 1 - 2*(qz**2+qx**2)) + 45
+                            pitch = asin(2*abcd/unitLength)
+                            roll = atan2(2*acbd, 1 - 2*(qy**2+qx**2))
+
+                    #calc of the angles
+                    # pitch = math.atan2(2 * (qw * qx + qy * qz), 1 - 2 * (qx * qx + qy * qy))
+                    # roll = math.asin(2 * (qw * qy - qz * qx))
+                    # yaw = -math.atan2(2 * (qw * qz + qx * qy), 1 - 2 * (qy * qy + qz * qz)) - np.pi / 2
+
+
+                    rate(50)
+                    k = vector(cos(yaw) * cos(pitch), sin(pitch), sin(yaw) * cos(pitch))
+                    y = vector(0, 1, 0)
+                    s = cross(k, y)
+                    v = cross(s, k)
+                    vrot = v * cos(roll) + cross(k, v) * sin(roll)
+
+                    # Die Winkeln an das Objekt anpassen
+                    fhObj.axis = k
+                    fhObj.up = vrot
+
+
+            except json.JSONDecodeError as e:
+                print(f"Fehler beim Dekodieren der JSON-Daten: {e}")
+
     except KeyboardInterrupt:
         # Das Programm beenden, wenn Strg+C gedrückt wird
         ser.close()
@@ -140,15 +194,15 @@ def open_scene():
     #         print(dataPacket)
     #         # Separieren der Sensor-Werte
     #         splitPacket = dataPacket.split(",")
-    #         q0 = float(splitPacket[1])  # w
-    #         q1 = float(splitPacket[2])  # x
-    #         q2 = float(splitPacket[3])  # y
-    #         q3 = float(splitPacket[4])  # z
+    #         qw = float(splitPacket[1])  # w
+    #         qx = float(splitPacket[2])  # x
+    #         qy = float(splitPacket[3])  # y
+    #         qz = float(splitPacket[4])  # z
     #
     #         # Berechnungen von Winkeln
-    #         roll = -math.atan2(2 * (q0 * q1 + q2 * q3), 1 - 2 * (q1 * q1 + q2 * q2))
-    #         pitch = math.asin(2 * (q0 * q2 - q3 * q1))
-    #         yaw = -math.atan2(2 * (q0 * q3 + q1 * q2), 1 - 2 * (q2 * q2 + q3 * q3)) - np.pi / 2
+    #         roll = -math.atan2(2 * (qw * qx + qy * qz), 1 - 2 * (qx * qx + qy * qy))
+    #         pitch = math.asin(2 * (qw * qy - qz * qx))
+    #         yaw = -math.atan2(2 * (qw * qz + qx * qy), 1 - 2 * (qy * qy + qz * qz)) - np.pi / 2
     #         rate(50)
     #         k = vector(cos(yaw) * cos(pitch), sin(pitch), sin(yaw) * cos(pitch))
     #         y = vector(0, 1, 0)
