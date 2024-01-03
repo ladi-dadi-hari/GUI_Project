@@ -166,14 +166,36 @@ def open_scene():
                 data = json.loads(line)
 
                 if 'euler' in data:
+
+                    toRad = 2 * np.pi / 360
+                    toDeg = 1 / toRad
+
                     euler = np.array(data['euler'])
                     print(f"euler: x: {euler[0]}, y: {euler[1]}, z: {euler[2]}")
                     #print(line)
 
+                    orient_vec = vector(euler[0], euler[1], euler[2])
+                    fhObj_2.axis = orient_vec;
+
+                    # roll = euler[0]*toRad
+                    # pitch = euler[1]*toRad
+                    # yaw = euler[2]*toRad+np.pi
+                    #
+                    # k = vector(cos(yaw) * cos(pitch), sin(pitch), sin(yaw) * cos(pitch))
+                    # y = vector(0, 1, 0)
+                    # s = cross(k, y)
+                    # v = cross(s, k)
+                    # vrot = v * cos(roll) + cross(k, v) * sin(roll)
+                    #
+                    # fhObj_2.axis = k
+                    # fhObj_2.up = vrot
+
+
+
                 elif 'quaternions' in data:
                     scale = (1.0 / (1 << 14))
                     quaternions = np.array(data['quaternions'])
-                    print(f"quat: w: {quaternions[0]}, x: {quaternions[1]}, y: {quaternions[2]}, z: {quaternions[3]}")
+                    #print(f"quat: w: {quaternions[0]}, x: {quaternions[1]}, y: {quaternions[2]}, z: {quaternions[3]}")
 
                     qw = quaternions[0]*scale
                     qx = quaternions[1]*scale
