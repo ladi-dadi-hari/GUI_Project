@@ -106,8 +106,9 @@ def open_scene():
                     data = json.loads(line)
 
                     if 'euler' in data:
-                        euler = np.array(data['euler'])
-                        print(f"euler: x: {euler[0]}, y: {euler[1]}, z: {euler[2]}")
+                        #euler = np.array(data['euler'])
+                        #print(f"euler: x: {euler[0]}, y: {euler[1]}, z: {euler[2]}")
+                        print(line)
 
                     elif 'quaternions' in data:
                         quaternions = np.array(data['quaternions'])
