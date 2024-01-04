@@ -8,7 +8,8 @@ from vpython import *
 import numpy as np
 import serial
 import json
-
+import datetime
+import time
 
 
 
@@ -170,25 +171,71 @@ def open_scene():
                     toRad = 2 * np.pi / 360
                     toDeg = 1 / toRad
 
+                    # Zeit:
+                    local_time = time.localtime()
+                    dt = datetime.datetime.now()
+
                     euler = np.array(data['euler'])
                     print(f"euler: x: {euler[0]}, y: {euler[1]}, z: {euler[2]}")
                     #print(line)
 
-                    orient_vec = vector(euler[0], euler[1], euler[2])
-                    fhObj_2.axis = orient_vec;
+                    #orient_vec = vector(euler[0], euler[1], euler[2])
+                    #fhObj_2.axis = orient_vec
 
-                    # roll = euler[0]*toRad
-                    # pitch = euler[1]*toRad
-                    # yaw = euler[2]*toRad+np.pi
+                    #acc_data = np.array([euler[3], euler[4], euler[5]])
+                    #gyro_data = np.array([euler[6], euler[7], euler[8]])
+
+                    #print(acc_data)
+                    #print(gyro_data)
+
+                    # orientation_angles = np.zeros(3)
+                    # for i in range(3):
+                    #     orientation_angles[i] = orientation_angles[i] + gyro_data[i] * dt.microsecond / 100
+                    # # Convert the accelerometer data to angles
+                    # acceleration_angles = np.zeros(3)
+                    # acceleration_angles[0] = np.arctan2(acc_data[1], acc_data[2])
+                    # acceleration_angles[1] = np.arctan2(-acc_data[0], np.sqrt(
+                    #     acc_data[1] ** 2 + acc_data[2] ** 2))
                     #
-                    # k = vector(cos(yaw) * cos(pitch), sin(pitch), sin(yaw) * cos(pitch))
-                    # y = vector(0, 1, 0)
-                    # s = cross(k, y)
-                    # v = cross(s, k)
-                    # vrot = v * cos(roll) + cross(k, v) * sin(roll)
+                    # # Combine the orientation angles and accelerometer angles using a complementary filter
+                    # # Der Wert von alpha bestimmt das Verhältnis zwischen den Integrationsergebnissen
+                    # # und den Beschleunigungsmesswerten. Ein höherer Wert von alpha bedeutet, dass die Integrationsergebnisse stärker gewichtet werden.
+                    # alpha = 0.98
+                    # for i in range(3):
+                    #     orientation_angles[i] = alpha * orientation_angles[i] + (1.0 - alpha) * acceleration_angles[i]
+
+                    rate(50)
+                    #print("mydata:")
+                    #print(orientation_angles)
+
+                    #orient_vec = vector(orientation_angles[0], orientation_angles[1], orientation_angles[2])
+                    #fhObj_2.axis = orient_vec
+
+                    # orient_vec = vector(orientation_angles[0], orientation_angles[1], orientation_angles[2])
+                    # fhObj_2.axis = orient_vec
+
+
+
+                    # x_angle_rad = euler[0] * (3.14159 / 180.0)
+                    # y_angle_rad = euler[1] * (3.14159 / 180.0)
+                    # z_angle_rad = euler[2] * (3.14159 / 180.0)
                     #
-                    # fhObj_2.axis = k
-                    # fhObj_2.up = vrot
+                    # fhObj_2.rotate(angle=x_angle_rad, axis=vector(1, 0 , 0))
+                    # fhObj_2.rotate(angle=y_angle_rad, axis=vector(0, 1 , 0))
+                    # fhObj_2.rotate(angle=z_angle_rad, axis=vector(0, 0 , 1))
+
+
+                    roll = euler[1]*toRad
+                    pitch = euler[0]*toRad
+                    yaw = euler[2]*toRad+np.pi + 180
+                    k = vector(cos(yaw) * cos(pitch), sin(pitch), sin(yaw) * cos(pitch))
+                    y = vector(0, 1, 0)
+                    s = cross(k, y)
+                    v = cross(s, k)
+                    vrot = v * cos(roll) + cross(k, v) * sin(roll)
+
+                    fhObj_2.axis = k
+                    fhObj_2.up = vrot
 
 
 
