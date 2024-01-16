@@ -9,12 +9,157 @@ import numpy as np
 import serial
 import json
 import datetime
+from datetime import *
 import time
+from scipy.spatial.transform import Rotation as R
+import csv
+import pandas as pd
 
+
+# def eulerWrite(data):
+#     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+#
+#     with open('euler_data.csv', 'a', newline='') as csvfile:
+#         fieldnames = ['Timestamp', 'Euler_Roll', 'Euler_Pitch', 'Euler_Yaw', 'Acc_X', 'Acc_Y', 'Acc_Z', 'Gyr_X', 'Gyr_Y',
+#                       'Gyr_Z', 'Mag_X', 'Mag_Y', 'Mag_Z']
+#         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+#
+#         if csvfile.tell() == 0:  # Check if the file is empty, write header if true
+#             writer.writeheader()
+#
+#         #        0     1    2       3 4 5      6 7 8      9 10 11
+#         # euler roll pitch yaw, acc x y z, gyr x y z, mag x y z
+#         writer.writerow({
+#             'Timestamp': timestamp,
+#             'Euler_Roll': data['euler'][0],
+#             'Euler_Pitch': data['euler'][1],
+#             'Euler_Yaw': data['euler'][2],
+#             'Acc_X': data['euler'][3],
+#             'Acc_Y': data['euler'][4],
+#             'Acc_Z': data['euler'][5],
+#             'Gyr_X': data['euler'][6],
+#             'Gyr_Y': data['euler'][7],
+#             'Gyr_Z': data['euler'][8],
+#             'Mag_X': data['euler'][9],
+#             'Mag_Y': data['euler'][10],
+#             'Mag_Z': data['euler'][11]
+#         })
+#
+#
+
+# def eulerWrite(data):
+#     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+#
+#     with open('euler_data.csv', 'a', newline='') as csvfile:
+#         fieldnames = ['Timestamp', 'Euler_Roll', 'Euler_Pitch', 'Euler_Yaw', 'Acc_X', 'Acc_Y', 'Acc_Z', 'Gyr_X', 'Gyr_Y',
+#                       'Gyr_Z', 'Mag_X', 'Mag_Y', 'Mag_Z']
+#         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+#
+#         if csvfile.tell() == 0:  # Check if the file is empty, write header if true
+#             writer.writeheader()
+#
+#         #        0     1    2       3 4 5      6 7 8      9 10 11
+#         # euler roll pitch yaw, acc x y z, gyr x y z, mag x y z
+#         try:
+#             writer.writerow({
+#                 'Timestamp': timestamp,
+#                 'Euler_Roll': data['euler'][0],
+#                 'Euler_Pitch': data['euler'][1],
+#                 'Euler_Yaw': data['euler'][2],
+#                 'Acc_X': data['euler'][3],
+#                 'Acc_Y': data['euler'][4],
+#                 'Acc_Z': data['euler'][5],
+#                 'Gyr_X': data['euler'][6],
+#                 'Gyr_Y': data['euler'][7],
+#                 'Gyr_Z': data['euler'][8],
+#                 'Mag_X': data['euler'][9],
+#                 'Mag_Y': data['euler'][10],
+#                 'Mag_Z': data['euler'][11]
+#             })
+#         except KeyError as e:
+#             print(f"KeyError: {e}")
+
+def eulerWrite(data):
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+
+    with open('euler_data.csv', 'a', newline='') as csvfile:
+        fieldnames = ['Timestamp', 'Euler_Roll', 'Euler_Pitch', 'Euler_Yaw', 'Acc_X', 'Acc_Y', 'Acc_Z', 'Gyr_X', 'Gyr_Y',
+                      'Gyr_Z', 'Mag_X', 'Mag_Y', 'Mag_Z']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        if csvfile.tell() == 0:  # Check if the file is empty, write header if true
+            writer.writeheader()
+
+        #        0     1    2       3 4 5      6 7 8      9 10 11
+        # euler roll pitch yaw, acc x y z, gyr x y z, mag x y z
+        try:
+            writer.writerow({
+                'Timestamp': timestamp,
+                'Euler_Roll': data['euler'][0],
+                'Euler_Pitch': data['euler'][1],
+                'Euler_Yaw': data['euler'][2],
+                'Acc_X': data['euler'][3],
+                'Acc_Y': data['euler'][4],
+                'Acc_Z': data['euler'][5],
+                'Gyr_X': data['euler'][6],
+                'Gyr_Y': data['euler'][7],
+                'Gyr_Z': data['euler'][8],
+                'Mag_X': data['euler'][9],
+                'Mag_Y': data['euler'][10],
+                'Mag_Z': data['euler'][11]
+            })
+        except IndexError as e:
+            print(f"IndexError: {e}")
+def quaternionWrite(data):
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+
+    with open('quaternion_data.csv', 'a', newline='') as csvfile:
+        fieldnames = ['Timestamp', 'Quaternion_W', 'Quaternion_X', 'Quaternion_Y', 'Quaternion_Z']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        if csvfile.tell() == 0:  # Check if the file is empty, write header if true
+            writer.writeheader()
+        # quat w x y z
+        try:
+            writer.writerow({
+                'Timestamp': timestamp,
+                'Quaternion_W': data['quaternions'][0],
+                'Quaternion_X': data['quaternions'][1],
+                'Quaternion_Y': data['quaternions'][2],
+                'Quaternion_Z': data['quaternions'][3]
+            })
+
+        except IndexError as e:
+            print(f"IndexError: {e}")
 
 
 def show_frame(frame):
     frame.tkraise()
+
+# def euler_to_rotation_matrix(roll, pitch, yaw):
+#     # Convert degrees to radians
+#     roll = np.radians(roll)
+#     pitch = np.radians(pitch)
+#     yaw = np.radians(yaw)
+#
+#     # Calculate the rotation matrix
+#     R_x = np.array([[1, 0, 0],
+#                     [0, np.cos(roll), -np.sin(roll)],
+#                     [0, np.sin(roll), np.cos(roll)]])
+#     R_y = np.array([[np.cos(pitch), 0, np.sin(pitch)],
+#                     [0, 1, 0],
+#                     [-np.sin(pitch), 0, np.cos(pitch)]])
+#     R_z = np.array([[np.cos(yaw), -np.sin(yaw), 0],
+#                     [np.sin(yaw), np.cos(yaw), 0],
+#                     [0, 0, 1]])
+#     R = np.dot(R_z, np.dot(R_y, R_x))
+#
+#     print(R_x, R_y, R_z)
+#     return R
+
+def euler_to_rotation_matrix(roll, pitch, yaw):
+    r = R.from_euler('xyz', [roll, pitch, yaw], degrees=True)
+    return r.as_matrix()
 
 def open_scene():
 
@@ -157,6 +302,7 @@ def open_scene():
         while True:
             # Daten vom COM-Port lesen
             line = ser.readline().decode('utf-8').strip()
+            print(line)
 
             if not line:
                 continue
@@ -168,15 +314,32 @@ def open_scene():
 
                 if 'euler' in data:
 
+                    eulerWrite(data)
+
                     toRad = 2 * np.pi / 360
                     toDeg = 1 / toRad
 
                     # Zeit:
-                    local_time = time.localtime()
-                    dt = datetime.datetime.now()
+                    #local_time = time.localtime()
+                    #dt = datetime.datetime.now()
 
                     euler = np.array(data['euler'])
-                    print(f"euler: x: {euler[0]}, y: {euler[1]}, z: {euler[2]}")
+
+                    # roll = euler[0] * toRad
+                    # pitch = euler[1] * toRad
+                    # yaw = euler[2] * toRad+np.pi
+                    #
+                    # k = vector(cos(yaw) * cos(pitch), sin(pitch), sin(yaw) * cos(pitch))
+                    #
+                    # y = vector(0, 1, 0)
+                    # s = cross(k, y)
+                    # v = cross(s, k)
+                    # vrot = v * cos(roll) + cross(k, v) * sin(roll)
+                    #
+                    # fhObj_2.axis = k
+                    # fhObj_2.up = v
+
+                    #print(f"euler: x: {euler[0]}, y: {euler[1]}, z: {euler[2]}")
                     #print(line)
 
                     #orient_vec = vector(euler[0], euler[1], euler[2])
@@ -204,7 +367,7 @@ def open_scene():
                     # for i in range(3):
                     #     orientation_angles[i] = alpha * orientation_angles[i] + (1.0 - alpha) * acceleration_angles[i]
 
-                    rate(50)
+                    rate(20)
                     #print("mydata:")
                     #print(orientation_angles)
 
@@ -216,18 +379,52 @@ def open_scene():
 
 
 
-                    # x_angle_rad = euler[0] * (3.14159 / 180.0)
-                    # y_angle_rad = euler[1] * (3.14159 / 180.0)
-                    # z_angle_rad = euler[2] * (3.14159 / 180.0)
+                    # x_angle_rad = euler[0] * toRad
+                    # y_angle_rad = euler[1] * toRad
+                    # z_angle_rad = euler[2] * toRad
+                    #
+                    # print(x_angle_rad,y_angle_rad, z_angle_rad)
                     #
                     # fhObj_2.rotate(angle=x_angle_rad, axis=vector(1, 0 , 0))
                     # fhObj_2.rotate(angle=y_angle_rad, axis=vector(0, 1 , 0))
                     # fhObj_2.rotate(angle=z_angle_rad, axis=vector(0, 0 , 1))
 
 
-                    roll = euler[1]*toRad
-                    pitch = euler[0]*toRad
-                    yaw = euler[2]*toRad+np.pi + 180
+                    roll = euler[1] * toRad
+                    pitch = -euler[0] * toRad ## yaw axis
+                    yaw = euler[2] * toRad + np.pi
+
+                    #def ndarray_to_vector(ndarray):
+                    #   return vp.vector(*ndarray)
+
+                    #roll = euler[0]
+                    #pitch = -euler[1]  ## yaw axis
+                    #yaw = euler[2]
+
+                    #rot_matrix = euler_to_rotation_matrix(roll, pitch, yaw)
+
+                    #fhObj_2.axis = ndarray_to_vector(rot_matrix[:, 0])
+                    #fhObj_2.up = ndarray_to_vector(rot_matrix[:, 1])
+
+                    # fhObj_2.rotate(angle=rot_matrix[0][0],
+                    #                   axis=vector(rot_matrix[0][1], rot_matrix[0][2], rot_matrix[1][0]))
+                    # fhObj_2.rotate(angle=rot_matrix[1][1],
+                    #                   axis=vector(rot_matrix[1][2], rot_matrix[2][0], rot_matrix[2][1]))
+                    # fhObj_2.rotate(angle=rot_matrix[2][2],
+                    #                   axis=vector(rot_matrix[2][0], rot_matrix[2][1], rot_matrix[2][2]))
+
+                    #roll = euler[1] * toRad
+                    #pitch = euler[0] * toRad
+                    #yaw = euler[2] * toRad + np.pi
+
+                    #def ndarray_to_vector(ndarray):
+                    #    return vp.vector(*ndarray)
+
+                    #R = euler_to_rotation_matrix(roll, pitch, yaw)
+
+                    #fhObj_2.axis = ndarray_to_vector(R[:, 0])
+                    #fhObj_2.up = ndarray_to_vector(R[:, 1])
+
                     k = vector(cos(yaw) * cos(pitch), sin(pitch), sin(yaw) * cos(pitch))
                     y = vector(0, 1, 0)
                     s = cross(k, y)
@@ -240,6 +437,9 @@ def open_scene():
 
 
                 elif 'quaternions' in data:
+
+                    quaternionWrite(data)
+
                     scale = (1.0 / (1 << 14))
                     quaternions = np.array(data['quaternions'])
                     #print(f"quat: w: {quaternions[0]}, x: {quaternions[1]}, y: {quaternions[2]}, z: {quaternions[3]}")
@@ -306,23 +506,80 @@ def open_scene():
         print("Programm beendet.")
 
 
-# Erstellen Sie sechs Subplots
-fig, axs = plt.subplots(3, 3, figsize=(10, 6), sharex=True, sharey=True)
+#fig, axs = plt.subplots(2, 2, figsize=(10, 6), sharex=True, sharey=True)
 
-# Erstellen Sie eine Liste von Farben für die Plots
-colors = ['red', 'red', 'red', 'green', 'green', 'green','blue', 'blue', 'blue']
+# Daten aus der CSV-Datei lesen
+df = pd.read_csv('euler_data.csv', parse_dates=['Timestamp'])
 
-# Füllen Sie jeden Subplot mit Dummy-Daten
-for i, ax in enumerate(axs.flat):
-    x = [1, 2, 3, 4, 5]
-    y = [i * j for j in x]
-    ax.plot(x, y, color=colors[i])
-    ax.set_title(f'Plot {i+1}')
 
-#ax.set_title(f'Accelerometer x')
 
-# Fügen Sie einen gemeinsamen Titel hinzu
-fig.suptitle('2D-Koordinatensysteme', fontsize=16)
+# Plot für Euler_X, Euler_Y und Euler_Z erstellen
+fig1 = plt.figure(figsize=(5, 3))
+plt.plot(df['Timestamp'], df['Euler_Roll'], label='Roll')
+plt.plot(df['Timestamp'], df['Euler_Pitch'], label='Pitch')
+plt.plot(df['Timestamp'], df['Euler_Yaw'], label='Yaw')
+plt.title('Euler Angles Over Time')
+#plt.xlabel('Timestamp')
+plt.ylabel('Angle (degrees)')
+plt.legend()
+#plt.show()
+
+# Plot für Acc_X, Acc_Y und Acc_Z erstellen
+fig2 = plt.figure(figsize=(5, 3))
+plt.plot(df['Timestamp'], df['Acc_X'], label='Acc_X')
+plt.plot(df['Timestamp'], df['Acc_Y'], label='Acc_Y')
+plt.plot(df['Timestamp'], df['Acc_Z'], label='Acc_Z')
+plt.title('Acceleration Over Time')
+#plt.xlabel('Timestamp')
+plt.ylabel('Acceleration (m/s^2)')
+plt.legend()
+#plt.show()
+
+# Plot für Gyr_X, Gyr_Y und Gyr_Z erstellen
+fig3 = plt.figure(figsize=(5, 3))
+plt.plot(df['Timestamp'], df['Gyr_X'], label='Gyr_X')
+plt.plot(df['Timestamp'], df['Gyr_Y'], label='Gyr_Y')
+plt.plot(df['Timestamp'], df['Gyr_Z'], label='Gyr_Z')
+plt.title('Gyroscope Readings Over Time')
+#plt.xlabel('Timestamp')
+plt.ylabel('Angular Velocity (deg/s)')
+plt.legend()
+#plt.show()
+
+# Plot für Mag_X, Mag_Y und Mag_Z erstellen
+fig4 = plt.figure(figsize=(5, 3))
+plt.plot(df['Timestamp'], df['Mag_X'], label='Mag_X')
+plt.plot(df['Timestamp'], df['Mag_Y'], label='Mag_Y')
+plt.plot(df['Timestamp'], df['Mag_Z'], label='Mag_Z')
+plt.title('Magnetometer Readings Over Time')
+#plt.xlabel('Timestamp')
+plt.ylabel('Magnetic Field Strength (uT)')
+plt.legend()
+#plt.show()
+
+#axs[0, 0].plot(fig1)
+#axs[0, 1].plot(fig2)
+#axs[1, 0].plot(fig3)
+#axs[1, 1].plot(fig4)
+
+
+# # Erstellen Sie sechs Subplots
+# fig, axs = plt.subplots(2, 2, figsize=(10, 6), sharex=True, sharey=True)
+#
+# # Erstellen Sie eine Liste von Farben für die Plots
+# colors = ['red', 'red', 'red', 'green', 'green', 'green','blue', 'blue', 'blue']
+#
+# # Füllen Sie jeden Subplot mit Dummy-Daten
+# for i, ax in enumerate(axs.flat):
+#     x = [1, 2, 3, 4, 5]
+#     y = [i * j for j in x]
+#     ax.plot(x, y, color=colors[i])
+#     ax.set_title(f'Plot {i+1}')
+#
+# #ax.set_title(f'Accelerometer x')
+#
+# # Fügen Sie einen gemeinsamen Titel hinzu
+# fig.suptitle('2D-Koordinatensysteme', fontsize=16)
 
 
 root = tk.Tk()
@@ -347,10 +604,22 @@ frame_2d_systems = tk.Frame(root, bg='white')
 frame_2d_systems.place(relwidth=1, relheight=1)
 
 # Fügen Sie die Plots in das Tkinter-Frame ein
-canvas = FigureCanvasTkAgg(fig, master=frame_2d_systems)
+canvas = FigureCanvasTkAgg(fig1, master=frame_2d_systems)
 canvas.draw()
-canvas.get_tk_widget().place(relx=0.5, rely=0.5, anchor='center')
+canvas.get_tk_widget().place(relx=0.55, rely=0.55, anchor='nw')
 #canvas.get_tk_widget().pack()
+
+canvas2 = FigureCanvasTkAgg(fig2, master=frame_2d_systems)
+canvas2.draw()
+canvas2.get_tk_widget().place(relx=0.45, rely=0.55, anchor='ne')
+
+canvas3 = FigureCanvasTkAgg(fig3, master=frame_2d_systems)
+canvas3.draw()
+canvas3.get_tk_widget().place(relx=0.45, rely=0.45, anchor='se')
+
+canvas4 = FigureCanvasTkAgg(fig4, master=frame_2d_systems)
+canvas4.draw()
+canvas4.get_tk_widget().place(relx=0.55, rely=0.45, anchor='sw')
 
 # Button-Frame im Hauptframe
 button_frame = tk.Frame(main_frame, bg='white')
