@@ -16,75 +16,11 @@ import csv
 import pandas as pd
 
 
-# def eulerWrite(data):
-#     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-#
-#     with open('euler_data.csv', 'a', newline='') as csvfile:
-#         fieldnames = ['Timestamp', 'Euler_Roll', 'Euler_Pitch', 'Euler_Yaw', 'Acc_X', 'Acc_Y', 'Acc_Z', 'Gyr_X', 'Gyr_Y',
-#                       'Gyr_Z', 'Mag_X', 'Mag_Y', 'Mag_Z']
-#         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-#
-#         if csvfile.tell() == 0:  # Check if the file is empty, write header if true
-#             writer.writeheader()
-#
-#         #        0     1    2       3 4 5      6 7 8      9 10 11
-#         # euler roll pitch yaw, acc x y z, gyr x y z, mag x y z
-#         writer.writerow({
-#             'Timestamp': timestamp,
-#             'Euler_Roll': data['euler'][0],
-#             'Euler_Pitch': data['euler'][1],
-#             'Euler_Yaw': data['euler'][2],
-#             'Acc_X': data['euler'][3],
-#             'Acc_Y': data['euler'][4],
-#             'Acc_Z': data['euler'][5],
-#             'Gyr_X': data['euler'][6],
-#             'Gyr_Y': data['euler'][7],
-#             'Gyr_Z': data['euler'][8],
-#             'Mag_X': data['euler'][9],
-#             'Mag_Y': data['euler'][10],
-#             'Mag_Z': data['euler'][11]
-#         })
-#
-#
-
-# def eulerWrite(data):
-#     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-#
-#     with open('euler_data.csv', 'a', newline='') as csvfile:
-#         fieldnames = ['Timestamp', 'Euler_Roll', 'Euler_Pitch', 'Euler_Yaw', 'Acc_X', 'Acc_Y', 'Acc_Z', 'Gyr_X', 'Gyr_Y',
-#                       'Gyr_Z', 'Mag_X', 'Mag_Y', 'Mag_Z']
-#         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-#
-#         if csvfile.tell() == 0:  # Check if the file is empty, write header if true
-#             writer.writeheader()
-#
-#         #        0     1    2       3 4 5      6 7 8      9 10 11
-#         # euler roll pitch yaw, acc x y z, gyr x y z, mag x y z
-#         try:
-#             writer.writerow({
-#                 'Timestamp': timestamp,
-#                 'Euler_Roll': data['euler'][0],
-#                 'Euler_Pitch': data['euler'][1],
-#                 'Euler_Yaw': data['euler'][2],
-#                 'Acc_X': data['euler'][3],
-#                 'Acc_Y': data['euler'][4],
-#                 'Acc_Z': data['euler'][5],
-#                 'Gyr_X': data['euler'][6],
-#                 'Gyr_Y': data['euler'][7],
-#                 'Gyr_Z': data['euler'][8],
-#                 'Mag_X': data['euler'][9],
-#                 'Mag_Y': data['euler'][10],
-#                 'Mag_Z': data['euler'][11]
-#             })
-#         except KeyError as e:
-#             print(f"KeyError: {e}")
-
 def eulerWrite(data):
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
 
     with open('euler_data.csv', 'a', newline='') as csvfile:
-        fieldnames = ['Timestamp', 'Euler_Roll', 'Euler_Pitch', 'Euler_Yaw', 'Acc_X', 'Acc_Y', 'Acc_Z', 'Gyr_X', 'Gyr_Y',
-                      'Gyr_Z', 'Mag_X', 'Mag_Y', 'Mag_Z']
+        fieldnames = ['Timestamp', 'Acc_X', 'Acc_Y', 'Acc_Z', 'Gyr_X', 'Gyr_Y', 'Gyr_Z', 'Mag_X', 'Mag_Y', 'Mag_Z']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
         if csvfile.tell() == 0:  # Check if the file is empty, write header if true
@@ -95,18 +31,15 @@ def eulerWrite(data):
         try:
             writer.writerow({
                 'Timestamp': timestamp,
-                'Euler_Roll': data['euler'][0],
-                'Euler_Pitch': data['euler'][1],
-                'Euler_Yaw': data['euler'][2],
-                'Acc_X': data['euler'][3],
-                'Acc_Y': data['euler'][4],
-                'Acc_Z': data['euler'][5],
-                'Gyr_X': data['euler'][6],
-                'Gyr_Y': data['euler'][7],
-                'Gyr_Z': data['euler'][8],
-                'Mag_X': data['euler'][9],
-                'Mag_Y': data['euler'][10],
-                'Mag_Z': data['euler'][11]
+                'Acc_X': data['euler'][0],
+                'Acc_Y': data['euler'][1],
+                'Acc_Z': data['euler'][2],
+                'Gyr_X': data['euler'][3],
+                'Gyr_Y': data['euler'][4],
+                'Gyr_Z': data['euler'][5],
+                'Mag_X': data['euler'][6],
+                'Mag_Y': data['euler'][7],
+                'Mag_Z': data['euler'][8]
             })
         except IndexError as e:
             print(f"IndexError: {e}")
@@ -157,9 +90,6 @@ def show_frame(frame):
 #     print(R_x, R_y, R_z)
 #     return R
 
-def euler_to_rotation_matrix(roll, pitch, yaw):
-    r = R.from_euler('xyz', [roll, pitch, yaw], degrees=True)
-    return r.as_matrix()
 
 def open_scene():
 
@@ -311,10 +241,11 @@ def open_scene():
 
             try:
                 data = json.loads(line)
+                eulerWrite(data)
 
                 if 'euler' in data:
 
-                    eulerWrite(data)
+                    #eulerWrite(data)
 
                     toRad = 2 * np.pi / 360
                     toDeg = 1 / toRad
@@ -513,17 +444,6 @@ df = pd.read_csv('euler_data.csv', parse_dates=['Timestamp'])
 
 
 
-# Plot für Euler_X, Euler_Y und Euler_Z erstellen
-fig1 = plt.figure(figsize=(5, 3))
-plt.plot(df['Timestamp'], df['Euler_Roll'], label='Roll')
-plt.plot(df['Timestamp'], df['Euler_Pitch'], label='Pitch')
-plt.plot(df['Timestamp'], df['Euler_Yaw'], label='Yaw')
-plt.title('Euler Angles Over Time')
-#plt.xlabel('Timestamp')
-plt.ylabel('Angle (degrees)')
-plt.legend()
-#plt.show()
-
 # Plot für Acc_X, Acc_Y und Acc_Z erstellen
 fig2 = plt.figure(figsize=(5, 3))
 plt.plot(df['Timestamp'], df['Acc_X'], label='Acc_X')
@@ -604,10 +524,7 @@ frame_2d_systems = tk.Frame(root, bg='white')
 frame_2d_systems.place(relwidth=1, relheight=1)
 
 # Fügen Sie die Plots in das Tkinter-Frame ein
-canvas = FigureCanvasTkAgg(fig1, master=frame_2d_systems)
-canvas.draw()
-canvas.get_tk_widget().place(relx=0.55, rely=0.55, anchor='nw')
-#canvas.get_tk_widget().pack()
+
 
 canvas2 = FigureCanvasTkAgg(fig2, master=frame_2d_systems)
 canvas2.draw()
