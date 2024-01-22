@@ -498,6 +498,11 @@ def on_closing():
 
     root.destroy()  # Destroy the Tkinter root window, ending the mainloop
 
+def on_combobox_change(event):
+    global selected_integer_value
+    button_choice.pack(pady=10)
+    selected_time_option = time_combobox.get()
+    selected_integer_value = time_option_mapping.get(selected_time_option, 0)
 
 if __name__ == '__main__':
 
@@ -550,12 +555,6 @@ if __name__ == '__main__':
 
     # Auswahl-Button, der erscheint, wenn eine Option in der Combobox ausgewählt wurde
     button_choice = tk.Button(frame_2d, text="Auswahl", command=lambda: show_frame(frame_2d_systems), bg='white', fg='black')
-
-    def on_combobox_change(event):
-        global selected_integer_value
-        button_choice.pack(pady=10)
-        selected_time_option = time_combobox.get()
-        selected_integer_value = time_option_mapping.get(selected_time_option, 0)
 
     time_combobox.bind("<<ComboboxSelected>>", on_combobox_change)
     button_2d = tk.Button(button_frame, text="2D-Koordinatensystem", command=lambda: show_frame(frame_2d), bg='white', fg='black', height= 10, width=40, font=helv36)
