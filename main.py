@@ -13,9 +13,20 @@ from datetime import *
 import time
 import csv
 import pandas as pd
+import threading
 
+selected_integer_value = 30
+
+
+def filter_data(df, deltatime):
+    df['Timestamp'] = pd.to_datetime(df['Timestamp'])  # Convert 'Timestamp' to datetime object
+    end_time = df['Timestamp'].max()  # Get the maximum timestamp in the DataFrame
+    start_time = end_time - pd.Timedelta(minutes=deltatime)  # Calculate the start time as the end time minus 30 minutes
+    filtered_df = df[(df['Timestamp'] >= start_time) & (df['Timestamp'] <= end_time)]  # Filter based on time range
+    return filtered_df
 
 def eulerWrite(data):
+
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
 
     with open('euler_data.csv', 'a', newline='') as csvfile:
@@ -25,8 +36,6 @@ def eulerWrite(data):
         if csvfile.tell() == 0:  # Check if the file is empty, write header if true
             writer.writeheader()
 
-        #        0     1    2       3 4 5      6 7 8      9 10 11
-        # euler roll pitch yaw, acc x y z, gyr x y z, mag x y z
         try:
             writer.writerow({
                 'Timestamp': timestamp,
@@ -70,109 +79,74 @@ def quaternionWrite(data):
 
 
 def show_frame(frame):
+
     frame.tkraise()
 
-    # Daten aus der CSV-Datei lesen
-    df = pd.read_csv('euler_data.csv', parse_dates=['Timestamp'])
+    try:
+        # Daten aus der CSV-Datei lesen
+        df = pd.read_csv('euler_data.csv', parse_dates=['Timestamp'])
 
-    # Plot für Acc_X, Acc_Y und Acc_Z erstellen
-    fig2 = plt.figure(figsize=(5, 3))
-    plt.plot(df['Timestamp'], df['Acc_X'], label='Acc_X')
-    plt.plot(df['Timestamp'], df['Acc_Y'], label='Acc_Y')
-    plt.plot(df['Timestamp'], df['Acc_Z'], label='Acc_Z')
-    plt.title('Acceleration Over Time')
-    # plt.xlabel('Timestamp')
-    plt.ylabel('Acceleration (m/s^2)')
-    plt.legend()
-    # plt.show()
+        filtered_data = filter_data(df,selected_integer_value)
 
-    # Plot für Gyr_X, Gyr_Y und Gyr_Z erstellen
-    fig3 = plt.figure(figsize=(5, 3))
-    plt.plot(df['Timestamp'], df['Gyr_X'], label='Gyr_X')
-    plt.plot(df['Timestamp'], df['Gyr_Y'], label='Gyr_Y')
-    plt.plot(df['Timestamp'], df['Gyr_Z'], label='Gyr_Z')
-    plt.title('Gyroscope Readings Over Time')
-    # plt.xlabel('Timestamp')
-    plt.ylabel('Angular Velocity (deg/s)')
-    plt.legend()
-    # plt.show()
+        # Plot für Acc_X, Acc_Y und Acc_Z erstellen
+        fig2 = plt.figure(figsize=(5, 3))
+        plt.plot(filtered_data['Timestamp'], filtered_data['Acc_X'], label='Acc_X')
+        plt.plot(filtered_data['Timestamp'], filtered_data['Acc_Y'], label='Acc_Y')
+        plt.plot(filtered_data['Timestamp'], filtered_data['Acc_Z'], label='Acc_Z')
+        plt.title('Acceleration Over Time')
+        # plt.xlabel('Timestamp')
+        plt.ylabel('Acceleration (m/s^2)')
+        plt.legend()
+        # plt.show()
 
-    # Plot für Mag_X, Mag_Y und Mag_Z erstellen
-    fig4 = plt.figure(figsize=(5, 3))
-    plt.plot(df['Timestamp'], df['Mag_X'], label='Mag_X')
-    plt.plot(df['Timestamp'], df['Mag_Y'], label='Mag_Y')
-    plt.plot(df['Timestamp'], df['Mag_Z'], label='Mag_Z')
-    plt.title('Magnetometer Readings Over Time')
-    # plt.xlabel('Timestamp')
-    plt.ylabel('Magnetic Field Strength (uT)')
-    plt.legend()
-    # plt.show()
+        # Plot für Gyr_X, Gyr_Y und Gyr_Z erstellen
+        fig3 = plt.figure(figsize=(5, 3))
+        plt.plot(filtered_data['Timestamp'], filtered_data['Gyr_X'], label='Gyr_X')
+        plt.plot(filtered_data['Timestamp'], filtered_data['Gyr_Y'], label='Gyr_Y')
+        plt.plot(filtered_data['Timestamp'], filtered_data['Gyr_Z'], label='Gyr_Z')
+        plt.title('Gyroscope Readings Over Time')
+        # plt.xlabel('Timestamp')
+        plt.ylabel('Angular Velocity (deg/s)')
+        plt.legend()
+        # plt.show()
 
-    canvas2 = FigureCanvasTkAgg(fig2, master=frame_2d_systems)
-    canvas2.draw()
-    canvas2.get_tk_widget().place(relx=0.45, rely=0.55, anchor='ne')
+        # Plot für Mag_X, Mag_Y und Mag_Z erstellen
+        fig4 = plt.figure(figsize=(5, 3))
+        plt.plot(filtered_data['Timestamp'], filtered_data['Mag_X'], label='Mag_X')
+        plt.plot(filtered_data['Timestamp'], filtered_data['Mag_Y'], label='Mag_Y')
+        plt.plot(filtered_data['Timestamp'], filtered_data['Mag_Z'], label='Mag_Z')
+        plt.title('Magnetometer Readings Over Time')
+        # plt.xlabel('Timestamp')
+        plt.ylabel('Magnetic Field Strength (uT)')
+        plt.legend()
+        # plt.show()
 
-    canvas3 = FigureCanvasTkAgg(fig3, master=frame_2d_systems)
-    canvas3.draw()
-    canvas3.get_tk_widget().place(relx=0.45, rely=0.45, anchor='se')
+        canvas2 = FigureCanvasTkAgg(fig2, master=frame_2d_systems)
+        canvas2.draw()
+        canvas2.get_tk_widget().place(relx=0.45, rely=0.55, anchor='ne')
 
-    canvas4 = FigureCanvasTkAgg(fig4, master=frame_2d_systems)
-    canvas4.draw()
-    canvas4.get_tk_widget().place(relx=0.55, rely=0.45, anchor='sw')
+        canvas3 = FigureCanvasTkAgg(fig3, master=frame_2d_systems)
+        canvas3.draw()
+        canvas3.get_tk_widget().place(relx=0.45, rely=0.45, anchor='se')
 
-    # axs[0, 0].plot(fig1)
-    # axs[0, 1].plot(fig2)
-    # axs[1, 0].plot(fig3)
-    # axs[1, 1].plot(fig4)
+        canvas4 = FigureCanvasTkAgg(fig4, master=frame_2d_systems)
+        canvas4.draw()
+        canvas4.get_tk_widget().place(relx=0.55, rely=0.45, anchor='sw')
 
-    # # Erstellen Sie sechs Subplots
-    # fig, axs = plt.subplots(2, 2, figsize=(10, 6), sharex=True, sharey=True)
-    #
-    # # Erstellen Sie eine Liste von Farben für die Plots
-    # colors = ['red', 'red', 'red', 'green', 'green', 'green','blue', 'blue', 'blue']
-    #
-    # # Füllen Sie jeden Subplot mit Dummy-Daten
-    # for i, ax in enumerate(axs.flat):
-    #     x = [1, 2, 3, 4, 5]
-    #     y = [i * j for j in x]
-    #     ax.plot(x, y, color=colors[i])
-    #     ax.set_title(f'Plot {i+1}')
-    #
-    # #ax.set_title(f'Accelerometer x')
-    #
-    # # Fügen Sie einen gemeinsamen Titel hinzu
-    # fig.suptitle('2D-Koordinatensysteme', fontsize=16)
-
-# def euler_to_rotation_matrix(roll, pitch, yaw):
-#     # Convert degrees to radians
-#     roll = np.radians(roll)
-#     pitch = np.radians(pitch)
-#     yaw = np.radians(yaw)
-#
-#     # Calculate the rotation matrix
-#     R_x = np.array([[1, 0, 0],
-#                     [0, np.cos(roll), -np.sin(roll)],
-#                     [0, np.sin(roll), np.cos(roll)]])
-#     R_y = np.array([[np.cos(pitch), 0, np.sin(pitch)],
-#                     [0, 1, 0],
-#                     [-np.sin(pitch), 0, np.cos(pitch)]])
-#     R_z = np.array([[np.cos(yaw), -np.sin(yaw), 0],
-#                     [np.sin(yaw), np.cos(yaw), 0],
-#                     [0, 0, 1]])
-#     R = np.dot(R_z, np.dot(R_y, R_x))
-#
-#     print(R_x, R_y, R_z)
-#     return R
+        plt.close('all')
 
 
-def open_scene():
+    except FileNotFoundError as e:
+        print()
 
-    ser = serial.Serial('com10', 115200)
+    except UnboundLocalError as e:
+        print()
 
-    # 3D-Visualisierungs-Frame
-    frame_3d = tk.Frame(root, bg='white')
-    frame_3d.place(relwidth=1, relheight=1)
-    frame_3d.pack()
+
+def open_scene(ser):
+
+
+    # root.destroy()
 
     # Set the scene
 
@@ -306,16 +280,10 @@ def open_scene():
     while True:
         # Daten vom COM-Port lesen
         line = ser.readline().decode('utf-8').strip()
-        print(line)
-
-        if not line:
-            continue
-
-        # Überprüfen, ob die Daten im JSON-Format vorliegen
 
         try:
             data = json.loads(line)
-            eulerWrite(data)
+            #eulerWrite(data)
 
             if 'euler' in data:
 
@@ -443,7 +411,7 @@ def open_scene():
 
             elif 'quaternions' in data:
 
-                quaternionWrite(data)
+                #quaternionWrite(data)
 
                 scale = (1.0 / (1 << 14))
                 quaternions = np.array(data['quaternions'])
@@ -504,9 +472,39 @@ def open_scene():
 
         except json.JSONDecodeError as e:
             print(f"Fehler beim Dekodieren der JSON-Daten: {e}")
+        except IndexError as e:
+            print(f"IndexError: {e}")
+
+
+def readData(ser):
+
+    try:
+        while True:
+
+            line = ser.readline().decode('utf-8').strip()
+            data = json.loads(line)
+            if 'euler' in data:
+                eulerWrite(data)
+
+    except json.JSONDecodeError as e:
+        print(f"Fehler beim Dekodieren der JSON-Daten: {e}")
+
+
+def on_closing():
+    try:
+        ser.close()  # Close the serial port
+    except Exception as e:
+        print(f"Error while closing the serial port: {e}")
+
+    root.destroy()  # Destroy the Tkinter root window, ending the mainloop
 
 
 if __name__ == '__main__':
+
+    ser = serial.Serial('com10', 115200)
+
+    thread = threading.Thread(target=readData, args=(ser,))
+    thread.start()
 
     root = tk.Tk()
     root.geometry('1200x900')  # Setzt die Größe des Fensters auf 1200x900
@@ -536,9 +534,30 @@ if __name__ == '__main__':
 
     helv36 = tkFont.Font(family='Helvetica', size=24, weight='bold')
 
-    button_3d = tk.Button(button_frame, text="3D-Visualisierung", command=lambda: open_scene(), bg='white', fg='black', height= 10, width=40, font=helv36)
+    button_3d = tk.Button(button_frame, text="3D-Visualisierung", command=lambda: open_scene(ser), bg='white', fg='black', height= 10, width=40, font=helv36)
     button_3d.pack(pady=10)  # Zentriert den Button vertikal und fügt einen Abstand zwischen den Buttons hinzu
 
+    time_option_mapping = {
+        "24 Stunden": 24 * 60,  # 24 hours in minutes
+        "Eine Stunde": 60,  # 1 hour in minutes
+        "30 Minuten": 30,  # 30 minutes
+        "48 Stunden": 48 * 60  # 48 hours in minutes
+    }
+
+    time_options = ["24 Stunden", "Eine Stunde", "30 Minuten", "48 Stunden"]
+    time_combobox = ttk.Combobox(frame_2d, values=time_options)
+    time_combobox.pack(pady=10)
+
+    # Auswahl-Button, der erscheint, wenn eine Option in der Combobox ausgewählt wurde
+    button_choice = tk.Button(frame_2d, text="Auswahl", command=lambda: show_frame(frame_2d_systems), bg='white', fg='black')
+
+    def on_combobox_change(event):
+        global selected_integer_value
+        button_choice.pack(pady=10)
+        selected_time_option = time_combobox.get()
+        selected_integer_value = time_option_mapping.get(selected_time_option, 0)
+
+    time_combobox.bind("<<ComboboxSelected>>", on_combobox_change)
     button_2d = tk.Button(button_frame, text="2D-Koordinatensystem", command=lambda: show_frame(frame_2d), bg='white', fg='black', height= 10, width=40, font=helv36)
     button_2d.pack(pady=10)  # Zentriert den Button vertikal und fügt einen Abstand zwischen den Buttons hinzu
 
@@ -554,16 +573,7 @@ if __name__ == '__main__':
     label_time = tk.Label(frame_2d, text="Zeitraum der Datenauswertung", font=helv36)
     label_time.pack(pady=10)
 
-    time_options = ["24 Stunden", "Eine Stunde", "30 Minuten", "48 Stunden"]
-    time_combobox = ttk.Combobox(frame_2d, values=time_options)
-    time_combobox.pack(pady=10)
 
-    # Auswahl-Button, der erscheint, wenn eine Option in der Combobox ausgewählt wurde
-    button_choice = tk.Button(frame_2d, text="Auswahl", command=lambda: show_frame(frame_2d_systems), bg='white', fg='black')
-    def on_combobox_change(event):
-        button_choice.pack(pady=10)
-
-    time_combobox.bind("<<ComboboxSelected>>", on_combobox_change)
 
     # Zurück-Button für den Frame frame_2d_systems
     back_button_2d_systems = tk.Button(frame_2d_systems, text="Zurück", command=lambda: show_frame(frame_2d), bg='white', fg='black')
@@ -571,5 +581,8 @@ if __name__ == '__main__':
 
     # Zeigen Sie den Hauptframe zuerst an
     show_frame(main_frame)
+
+    # Bind the closing event to the on_closing function
+    root.protocol("WM_DELETE_WINDOW", on_closing)
 
     root.mainloop()
