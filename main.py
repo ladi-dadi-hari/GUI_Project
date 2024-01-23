@@ -21,7 +21,7 @@ ser=None
 
 time_option_mapping = {
     "24 Stunden": 24 * 60,  # 24 hours in minutes
-    "Eine Stunde": 60,  # 1 hour in minutes
+    "Eine Minute": 1,  # 1 hour in minutes
     "30 Minuten": 30,  # 30 minutes
     "48 Stunden": 48 * 60  # 48 hours in minutes
 }
@@ -298,111 +298,15 @@ def open_scene(ser):
                 toRad = 2 * np.pi / 360
                 toDeg = 1 / toRad
 
-                # Zeit:
-                #local_time = time.localtime()
-                #dt = datetime.datetime.now()
-
                 euler = np.array(data['euler'])
 
-                # roll = euler[0] * toRad
-                # pitch = euler[1] * toRad
-                # yaw = euler[2] * toRad+np.pi
-                #
-                # k = vector(cos(yaw) * cos(pitch), sin(pitch), sin(yaw) * cos(pitch))
-                #
-                # y = vector(0, 1, 0)
-                # s = cross(k, y)
-                # v = cross(s, k)
-                # vrot = v * cos(roll) + cross(k, v) * sin(roll)
-                #
-                # fhObj_2.axis = k
-                # fhObj_2.up = v
-
-                #print(f"euler: x: {euler[0]}, y: {euler[1]}, z: {euler[2]}")
-                #print(line)
-
-                #orient_vec = vector(euler[0], euler[1], euler[2])
-                #fhObj_2.axis = orient_vec
-
-                #acc_data = np.array([euler[3], euler[4], euler[5]])
-                #gyro_data = np.array([euler[6], euler[7], euler[8]])
-
-                #print(acc_data)
-                #print(gyro_data)
-
-                # orientation_angles = np.zeros(3)
-                # for i in range(3):
-                #     orientation_angles[i] = orientation_angles[i] + gyro_data[i] * dt.microsecond / 100
-                # # Convert the accelerometer data to angles
-                # acceleration_angles = np.zeros(3)
-                # acceleration_angles[0] = np.arctan2(acc_data[1], acc_data[2])
-                # acceleration_angles[1] = np.arctan2(-acc_data[0], np.sqrt(
-                #     acc_data[1] ** 2 + acc_data[2] ** 2))
-                #
-                # # Combine the orientation angles and accelerometer angles using a complementary filter
-                # # Der Wert von alpha bestimmt das Verhältnis zwischen den Integrationsergebnissen
-                # # und den Beschleunigungsmesswerten. Ein höherer Wert von alpha bedeutet, dass die Integrationsergebnisse stärker gewichtet werden.
-                # alpha = 0.98
-                # for i in range(3):
-                #     orientation_angles[i] = alpha * orientation_angles[i] + (1.0 - alpha) * acceleration_angles[i]
-
                 rate(20)
-                #print("mydata:")
-                #print(orientation_angles)
-
-                #orient_vec = vector(orientation_angles[0], orientation_angles[1], orientation_angles[2])
-                #fhObj_2.axis = orient_vec
-
-                # orient_vec = vector(orientation_angles[0], orientation_angles[1], orientation_angles[2])
-                # fhObj_2.axis = orient_vec
-
-
-
-                # x_angle_rad = euler[0] * toRad
-                # y_angle_rad = euler[1] * toRad
-                # z_angle_rad = euler[2] * toRad
-                #
-                # print(x_angle_rad,y_angle_rad, z_angle_rad)
-                #
-                # fhObj_2.rotate(angle=x_angle_rad, axis=vector(1, 0 , 0))
-                # fhObj_2.rotate(angle=y_angle_rad, axis=vector(0, 1 , 0))
-                # fhObj_2.rotate(angle=z_angle_rad, axis=vector(0, 0 , 1))
-
 
                 roll = euler[1] * toRad
-                pitch = -euler[0] * toRad ## yaw axis
-                yaw = euler[2] * toRad + np.pi
+                pitch = euler[0] * toRad  ## yaw axis
+                yaw = euler[2] * toRad
 
-                #def ndarray_to_vector(ndarray):
-                #   return vp.vector(*ndarray)
-
-                #roll = euler[0]
-                #pitch = -euler[1]  ## yaw axis
-                #yaw = euler[2]
-
-                #rot_matrix = euler_to_rotation_matrix(roll, pitch, yaw)
-
-                #fhObj_2.axis = ndarray_to_vector(rot_matrix[:, 0])
-                #fhObj_2.up = ndarray_to_vector(rot_matrix[:, 1])
-
-                # fhObj_2.rotate(angle=rot_matrix[0][0],
-                #                   axis=vector(rot_matrix[0][1], rot_matrix[0][2], rot_matrix[1][0]))
-                # fhObj_2.rotate(angle=rot_matrix[1][1],
-                #                   axis=vector(rot_matrix[1][2], rot_matrix[2][0], rot_matrix[2][1]))
-                # fhObj_2.rotate(angle=rot_matrix[2][2],
-                #                   axis=vector(rot_matrix[2][0], rot_matrix[2][1], rot_matrix[2][2]))
-
-                #roll = euler[1] * toRad
-                #pitch = euler[0] * toRad
-                #yaw = euler[2] * toRad + np.pi
-
-                #def ndarray_to_vector(ndarray):
-                #    return vp.vector(*ndarray)
-
-                #R = euler_to_rotation_matrix(roll, pitch, yaw)
-
-                #fhObj_2.axis = ndarray_to_vector(R[:, 0])
-                #fhObj_2.up = ndarray_to_vector(R[:, 1])
+                #print(f"roll: {euler[0]}, pitch: {euler[1]}, yaw: {euler[2]}")
 
                 k = vector(cos(yaw) * cos(pitch), sin(pitch), sin(yaw) * cos(pitch))
                 y = vector(0, 1, 0)
@@ -412,7 +316,6 @@ def open_scene(ser):
 
                 fhObj_2.axis = k
                 fhObj_2.up = vrot
-
 
 
             elif 'quaternions' in data:
@@ -563,7 +466,7 @@ if __name__ == '__main__':
                           fg='black', height=10, width=40, font=helv36)
     button_3d.pack(pady=10)  # Zentriert den Button vertikal und fügt einen Abstand zwischen den Buttons hinzu
 
-    time_options = ["24 Stunden", "Eine Stunde", "30 Minuten", "48 Stunden"]
+    time_options = ["24 Stunden", "Eine Minute", "30 Minuten", "48 Stunden"]
     time_combobox = ttk.Combobox(frame_2d, values=time_options, state="readonly")
     time_combobox.pack(pady=10)
 
@@ -605,7 +508,6 @@ if __name__ == '__main__':
     combobox_comport.bind("<<ComboboxSelected>>", on_combobox_comport_select)
 
     frame_welcome.pack(expand=True, fill='both')
-
 
     # Zeigen Sie den Hauptframe zuerst an
     show_frame(frame_welcome)
