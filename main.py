@@ -15,12 +15,21 @@ import csv
 import pandas as pd
 import threading
 
-selected_integer_value = 30
+selected_integer_value = 0
+selected_port = None
+ser=None
+
+time_option_mapping = {
+    "24 Stunden": 24 * 60,  # 24 hours in minutes
+    "Eine Stunde": 60,  # 1 hour in minutes
+    "30 Minuten": 30,  # 30 minutes
+    "48 Stunden": 48 * 60  # 48 hours in minutes
+}
 
 
 def filter_data(df, deltatime):
     df['Timestamp'] = pd.to_datetime(df['Timestamp'])  # Convert 'Timestamp' to datetime object
-    end_time = df['Timestamp'].max()  # Get the maximum timestamp in the DataFrame
+    end_time = datetime.now()  # Get current time
     start_time = end_time - pd.Timedelta(minutes=deltatime)  # Calculate the start time as the end time minus 30 minutes
     filtered_df = df[(df['Timestamp'] >= start_time) & (df['Timestamp'] <= end_time)]  # Filter based on time range
     return filtered_df
@@ -82,11 +91,13 @@ def show_frame(frame):
 
     frame.tkraise()
 
+def plots():
+
     try:
         # Daten aus der CSV-Datei lesen
         df = pd.read_csv('euler_data.csv', parse_dates=['Timestamp'])
 
-        filtered_data = filter_data(df,selected_integer_value)
+        filtered_data = filter_data(df, selected_integer_value)
 
         # Plot für Acc_X, Acc_Y und Acc_Z erstellen
         fig2 = plt.figure(figsize=(5, 3))
@@ -94,8 +105,9 @@ def show_frame(frame):
         plt.plot(filtered_data['Timestamp'], filtered_data['Acc_Y'], label='Acc_Y')
         plt.plot(filtered_data['Timestamp'], filtered_data['Acc_Z'], label='Acc_Z')
         plt.title('Acceleration Over Time')
-        # plt.xlabel('Timestamp')
+        plt.xlabel('Timestamp')
         plt.ylabel('Acceleration (m/s^2)')
+        plt.xticks(fontsize=5)
         plt.legend()
         # plt.show()
 
@@ -105,8 +117,9 @@ def show_frame(frame):
         plt.plot(filtered_data['Timestamp'], filtered_data['Gyr_Y'], label='Gyr_Y')
         plt.plot(filtered_data['Timestamp'], filtered_data['Gyr_Z'], label='Gyr_Z')
         plt.title('Gyroscope Readings Over Time')
-        # plt.xlabel('Timestamp')
+        plt.xlabel('Timestamp')
         plt.ylabel('Angular Velocity (deg/s)')
+        plt.xticks(fontsize=5)
         plt.legend()
         # plt.show()
 
@@ -116,8 +129,9 @@ def show_frame(frame):
         plt.plot(filtered_data['Timestamp'], filtered_data['Mag_Y'], label='Mag_Y')
         plt.plot(filtered_data['Timestamp'], filtered_data['Mag_Z'], label='Mag_Z')
         plt.title('Magnetometer Readings Over Time')
-        # plt.xlabel('Timestamp')
+        plt.xlabel('Timestamp')
         plt.ylabel('Magnetic Field Strength (uT)')
+        plt.xticks(fontsize=5)
         plt.legend()
         # plt.show()
 
@@ -145,17 +159,12 @@ def show_frame(frame):
 
 def open_scene(ser):
 
-
-    # root.destroy()
-
     # Set the scene
 
     scene = vp.canvas(frame=frame_3d, width=1200, height=600)
     scene.center = vector(0, 0, 0)
     scene.forward = vector(10, -1, 1)
     scene.background = color.white
-
-
 
     # Create the BNO055 board
     bnoO55 = box(length=0.5, width=0.38, height=0.04, opacity=.75, pos=vec(0, -0.065, 0), color=vec(0.2, 0.2, 0.2))
@@ -283,11 +292,8 @@ def open_scene(ser):
 
         try:
             data = json.loads(line)
-            #eulerWrite(data)
 
             if 'euler' in data:
-
-                #eulerWrite(data)
 
                 toRad = 2 * np.pi / 360
                 toDeg = 1 / toRad
@@ -504,12 +510,24 @@ def on_combobox_change(event):
     selected_time_option = time_combobox.get()
     selected_integer_value = time_option_mapping.get(selected_time_option, 0)
 
+def on_combobox_comport_select(event):
+
+    global selected_port
+    selected_port = combobox_comport.get()
+    # You can perform any action with the selected COM port here, e.g., print it
+    print(f"Selected COM port: {selected_port}")
+
+
+def open_serial_port():
+
+        global ser
+        ser=serial.Serial(selected_port, 115200)
+        thread = threading.Thread(target=readData, args=(ser,))
+        thread.start()
+
+
+
 if __name__ == '__main__':
-
-    ser = serial.Serial('com10', 115200)
-
-    thread = threading.Thread(target=readData, args=(ser,))
-    thread.start()
 
     root = tk.Tk()
     root.geometry('1200x900')  # Setzt die Größe des Fensters auf 1200x900
@@ -523,7 +541,6 @@ if __name__ == '__main__':
     frame_3d = tk.Frame(root, bg='white')
     frame_3d.place(relwidth=1, relheight=1)
 
-
     # 2D-Koordinatensystem-Frame
     frame_2d = tk.Frame(root, bg='white')
     frame_2d.place(relwidth=1, relheight=1)
@@ -532,6 +549,9 @@ if __name__ == '__main__':
     frame_2d_systems = tk.Frame(root, bg='white')
     frame_2d_systems.place(relwidth=1, relheight=1)
 
+    # Welcome-Frame
+    frame_welcome = tk.Frame(root, bg='white')
+    frame_welcome.place(relwidth=1, relheight=1)
 
     # Button-Frame im Hauptframe
     button_frame = tk.Frame(main_frame, bg='white')
@@ -539,47 +559,56 @@ if __name__ == '__main__':
 
     helv36 = tkFont.Font(family='Helvetica', size=24, weight='bold')
 
-    button_3d = tk.Button(button_frame, text="3D-Visualisierung", command=lambda: open_scene(ser), bg='white', fg='black', height= 10, width=40, font=helv36)
+    button_3d = tk.Button(button_frame, text="3D-Visualisierung", command=lambda: open_scene(ser), bg='white',
+                          fg='black', height=10, width=40, font=helv36)
     button_3d.pack(pady=10)  # Zentriert den Button vertikal und fügt einen Abstand zwischen den Buttons hinzu
 
-    time_option_mapping = {
-        "24 Stunden": 24 * 60,  # 24 hours in minutes
-        "Eine Stunde": 60,  # 1 hour in minutes
-        "30 Minuten": 30,  # 30 minutes
-        "48 Stunden": 48 * 60  # 48 hours in minutes
-    }
-
     time_options = ["24 Stunden", "Eine Stunde", "30 Minuten", "48 Stunden"]
-    time_combobox = ttk.Combobox(frame_2d, values=time_options)
+    time_combobox = ttk.Combobox(frame_2d, values=time_options, state="readonly")
     time_combobox.pack(pady=10)
 
     # Auswahl-Button, der erscheint, wenn eine Option in der Combobox ausgewählt wurde
-    button_choice = tk.Button(frame_2d, text="Auswahl", command=lambda: show_frame(frame_2d_systems), bg='white', fg='black')
+    button_choice = tk.Button(frame_2d, text="Auswahl", command=lambda: [show_frame(frame_2d_systems), plots()],
+                              bg='white', fg='black')
 
     time_combobox.bind("<<ComboboxSelected>>", on_combobox_change)
-    button_2d = tk.Button(button_frame, text="2D-Koordinatensystem", command=lambda: show_frame(frame_2d), bg='white', fg='black', height= 10, width=40, font=helv36)
+    button_2d = tk.Button(button_frame, text="2D-Koordinatensystem", command=lambda: show_frame(frame_2d), bg='white',
+                          fg='black', height=10, width=40, font=helv36)
     button_2d.pack(pady=10)  # Zentriert den Button vertikal und fügt einen Abstand zwischen den Buttons hinzu
-
 
     # Zurück-Buttons für die Frames frame_3d und frame_2d
     back_button_3d = tk.Button(frame_3d, text="Zurück", command=lambda: show_frame(main_frame), bg='white', fg='black')
     back_button_3d.place(x=0, y=0)  # Positioniert den Button in der linken oberen Ecke
 
     back_button_2d = tk.Button(frame_2d, text="Zurück", command=lambda: show_frame(main_frame), bg='white', fg='black')
-    back_button_2d.place(x=0, y=0) # Positioniert den Button in der linken oberen Ecke
+    back_button_2d.place(x=0, y=0)  # Positioniert den Button in der linken oberen Ecke
 
     # Combobox für den Zeitraum der Datenauswertung
     label_time = tk.Label(frame_2d, text="Zeitraum der Datenauswertung", font=helv36)
     label_time.pack(pady=10)
 
-
-
     # Zurück-Button für den Frame frame_2d_systems
-    back_button_2d_systems = tk.Button(frame_2d_systems, text="Zurück", command=lambda: show_frame(frame_2d), bg='white', fg='black')
+    back_button_2d_systems = tk.Button(frame_2d_systems, text="Zurück", command=lambda: show_frame(frame_2d),
+                                       bg='white', fg='black')
     back_button_2d_systems.place(x=0, y=0)  # Positioniert den Button in der linken oberen Ecke
 
+    # Com-port frame elemente
+    com_ports = [f"com{i}" for i in range(21)]
+    combobox_comport = ttk.Combobox(frame_welcome, values=com_ports, state="readonly")
+    combobox_comport.pack(pady=10)
+    combobox_comport.set("Select COM port")  # Set a default value
+
+    comport_button = tk.Button(frame_welcome, text="Auswahl", command=lambda: [show_frame(main_frame), open_serial_port()] , bg='white', fg='black')
+    comport_button.pack(pady=10)
+
+    # Bind the on_combobox_select function to the <<ComboboxSelected>> event
+    combobox_comport.bind("<<ComboboxSelected>>", on_combobox_comport_select)
+
+    frame_welcome.pack(expand=True, fill='both')
+
+
     # Zeigen Sie den Hauptframe zuerst an
-    show_frame(main_frame)
+    show_frame(frame_welcome)
 
     # Bind the closing event to the on_closing function
     root.protocol("WM_DELETE_WINDOW", on_closing)
