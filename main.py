@@ -295,15 +295,25 @@ def open_scene(ser):
 
             if 'euler' in data:
 
+                #print(data)
+
+
                 toRad = 2 * np.pi / 360
                 toDeg = 1 / toRad
 
                 euler = np.array(data['euler'])
 
+                #print(euler[9]/16, euler[10]/16, euler[11]/16)
+
                 rate(20)
 
-                roll = euler[1] * toRad
-                pitch = euler[0] * toRad  ## yaw axis
+                #roll = (euler[0] / 16) * toRad
+                #pitch = (euler[1] / 16) * toRad
+                #yaw = (euler[2] / 16) * toRad
+
+
+                roll = euler[1] * toRad # theta
+                pitch = euler[0] * toRad  # yaw axis
                 yaw = euler[2] * toRad
 
                 #print(f"roll: {euler[0]}, pitch: {euler[1]}, yaw: {euler[2]}")
@@ -361,13 +371,10 @@ def open_scene(ser):
                         pitch = asin(2*abcd/unitLength)
                         roll = atan2(2*acbd, 1 - 2*(qy**2+qx**2))
 
-                #calc of the angles
-                # pitch = math.atan2(2 * (qw * qx + qy * qz), 1 - 2 * (qx * qx + qy * qy))
-                # roll = math.asin(2 * (qw * qy - qz * qx))
-                # yaw = -math.atan2(2 * (qw * qz + qx * qy), 1 - 2 * (qy * qy + qz * qz)) - np.pi / 2
 
 
-                rate(50)
+                rate(20
+                     )
                 k = vector(cos(yaw) * cos(pitch), sin(pitch), sin(yaw) * cos(pitch))
                 y = vector(0, 1, 0)
                 s = cross(k, y)
