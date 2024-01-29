@@ -14,10 +14,84 @@ import time
 import csv
 import pandas as pd
 import threading
+import math
 
 selected_integer_value = 0
 selected_port = None
 ser=None
+
+class BNO055Data:
+    def __init__(self):
+        self.thetaM = 0.0
+        self.phiM = 0.0
+        self.thetaFold = 0.0
+        self.thetaFnew = 0.0
+        self.phiFold = 0.0
+        self.phiFnew = 0.0
+        self.thetaG = 0.0
+        self.phiG = 0.0
+        self.theta = 0.0
+        self.phi = 0.0
+        self.thetaRad = 0.0
+        self.phiRad = 0.0
+        self.Xm = 0.0
+        self.Ym = 0.0
+        self.psi = 0.0
+        self.dt = 0.0
+        self.millisOld = int(time.time() * 1000)
+
+
+bno055 = BNO055Data()
+#toRad = 2 * math.pi / 360
+#toDeg = 1 / toRad
+
+def calc_euler(data) -> np.array:
+    # sprintf(buffer, "{\"euler\": [%d, %d, %d, %d, %d, %d, %d, %d, %d]}", bno055.acc_x, bno055.acc_y, bno055.acc_z,
+    # bno055.gyr_x, bno055.gyr_y, bno055.gyr_z, bno055.mag_x, bno055.mag_y, bno055.mag_z);
+    #     012      345      678
+    # acc xyz, gyr xyz, mag xyz
+
+    # accelerometer unit:               1 m/s^2 = 100 LSB
+    # gyroscope unit:                   1 dps (degree per second) = 16 LSB
+    # magnetometer unit:                1 mT = 16 LSB
+
+    accX = data[0] / 100
+    accY = data[1] / 100
+    accZ = data[2] / 100
+    gyrX = (data[3] / 16) * 0.01745329251 # direkt zu rps weil adruino standard in rps ist
+    gyrY = (data[4] / 16) * 0.01745329251 # direkt zu rps weil adruino standard in rps ist
+    gyrZ = (data[5] / 16) * 0.01745329251 # direkt zu rps weil adruino standard in rps ist
+    magX = data[6] / 16
+    magY = data[7] / 16
+    magZ = data[8] / 16
+
+    # https://toptechboy.com/9-axis-imu-lesson-20-vpython-visualization-of-roll-pitch-and-yaw/
+    bno055.thetaM = -(math.atan2(accX / 9.81, accZ / 9.81)) / 2 / math.pi * 360
+    bno055.phiM = -(math.atan2(accY / 9.81, accZ / 9.81)) / 2 / math.pi * 360
+    bno055.phiFnew = 0.95 * bno055.phiFold + 0.05 * bno055.phiM
+    bno055.thetaFnew = 0.95 * bno055.thetaFold + 0.05 * bno055.thetaM
+
+    bno055.dt = (int(time.time() * 1000) - bno055.millisOld) / 1000
+    bno055.millisOld = int(time.time() * 1000)
+
+    bno055.theta = (bno055.theta + gyrY * bno055.dt) * 0.95 + bno055.thetaM * 0.05
+    bno055.phi = (bno055.phi - gyrX * bno055.dt) * 0.95 + bno055.phiM * 0.05
+    bno055.thetaG = bno055.thetaG + gyrY * bno055.dt
+    bno055.phiG = bno055.phiG - gyrX * bno055.dt
+
+    bno055.phiRad = bno055.phi / 360 * (2 * math.pi)
+    bno055.thetaRad = bno055.theta / 360 * (2 * math.pi)
+
+    bno055.Xm = magX * math.cos(bno055.thetaRad) - magY * math.sin(bno055.phiRad) * math.sin(bno055.thetaRad) + magZ * math.cos(bno055.phiRad) * math.sin(bno055.thetaRad)
+    bno055.Ym = magY * math.cos(bno055.phiRad) + magZ * math.sin(bno055.phiRad)
+
+    bno055.psi = math.atan2(bno055.Ym, bno055.Xm) / (2 * math.pi) * 360
+
+    bno055.phiFold = bno055.phiFnew
+    bno055.thetaFold = bno055.thetaFnew
+
+    return np.array([bno055.phi, bno055.theta, bno055.psi, accX, accY, accZ, gyrX/0.01745329251, gyrY/0.01745329251, gyrZ/0.01745329251, magX, magY, magZ])
+
 
 time_option_mapping = {
     "24 Stunden": 24 * 60,  # 24 hours in minutes
@@ -88,7 +162,6 @@ def quaternionWrite(data):
 
 
 def show_frame(frame):
-
     frame.tkraise()
 
 def plots():
@@ -157,10 +230,9 @@ def plots():
         print()
 
 
-def open_scene(ser):
+def open_visualization(ser):
 
     # Set the scene
-
     scene = vp.canvas(frame=frame_3d, width=1200, height=600)
     scene.center = vector(0, 0, 0)
     scene.forward = vector(10, -1, 1)
@@ -293,30 +365,17 @@ def open_scene(ser):
         try:
             data = json.loads(line)
 
-            if 'euler' in data:
-
-                #print(data)
-
+            if 'euler' in data.keys():
 
                 toRad = 2 * np.pi / 360
-                toDeg = 1 / toRad
 
                 euler = np.array(data['euler'])
 
-                #print(euler[9]/16, euler[10]/16, euler[11]/16)
-
-                rate(20)
-
-                #roll = (euler[0] / 16) * toRad
-                #pitch = (euler[1] / 16) * toRad
-                #yaw = (euler[2] / 16) * toRad
-
+                euler = calc_euler(euler)
 
                 roll = euler[1] * toRad # theta
                 pitch = euler[0] * toRad  # yaw axis
                 yaw = euler[2] * toRad
-
-                #print(f"roll: {euler[0]}, pitch: {euler[1]}, yaw: {euler[2]}")
 
                 k = vector(cos(yaw) * cos(pitch), sin(pitch), sin(yaw) * cos(pitch))
                 y = vector(0, 1, 0)
@@ -328,7 +387,7 @@ def open_scene(ser):
                 fhObj_2.up = vrot
 
 
-            elif 'quaternions' in data:
+            elif 'quaternions' in data.keys():
 
                 #quaternionWrite(data)
 
@@ -354,7 +413,6 @@ def open_scene(ser):
                 abcd = qw*qx + qy*qz
 
                 # added 45 for correction of angle
-
                 if(unitLength != 0):
                     if(abcd > (0.4995)*unitLength):
                         yaw = 2 * atan2(qy, qw) + 45
@@ -372,16 +430,13 @@ def open_scene(ser):
                         roll = atan2(2*acbd, 1 - 2*(qy**2+qx**2))
 
 
-
-                rate(20
-                     )
                 k = vector(cos(yaw) * cos(pitch), sin(pitch), sin(yaw) * cos(pitch))
                 y = vector(0, 1, 0)
                 s = cross(k, y)
                 v = cross(s, k)
                 vrot = v * cos(roll) + cross(k, v) * sin(roll)
 
-                # Die Winkeln an das Objekt anpassen
+                # Die Winkel an das Objekt anpassen
                 fhObj.axis = k
                 fhObj.up = vrot
 
@@ -410,7 +465,7 @@ def on_closing():
     try:
         ser.close()  # Close the serial port
     except Exception as e:
-        print(f"Error while closing the serial port: {e}")
+        print(f"Fehler beim schließen des com-ports: {e}")
 
     root.destroy()  # Destroy the Tkinter root window, ending the mainloop
 
@@ -421,7 +476,6 @@ def on_combobox_change(event):
     selected_integer_value = time_option_mapping.get(selected_time_option, 0)
 
 def on_combobox_comport_select(event):
-
     global selected_port
     selected_port = combobox_comport.get()
     # You can perform any action with the selected COM port here, e.g., print it
@@ -429,12 +483,10 @@ def on_combobox_comport_select(event):
 
 
 def open_serial_port():
-
-        global ser
-        ser=serial.Serial(selected_port, 115200)
-        thread = threading.Thread(target=readData, args=(ser,))
-        thread.start()
-
+    global ser
+    ser=serial.Serial(selected_port, 115200)
+    thread = threading.Thread(target=readData, args=(ser,))
+    thread.start()
 
 
 if __name__ == '__main__':
@@ -469,7 +521,7 @@ if __name__ == '__main__':
 
     helv36 = tkFont.Font(family='Helvetica', size=24, weight='bold')
 
-    button_3d = tk.Button(button_frame, text="3D-Visualisierung", command=lambda: open_scene(ser), bg='white',
+    button_3d = tk.Button(button_frame, text="3D-Visualisierung", command=lambda: open_visualization(ser), bg='white',
                           fg='black', height=10, width=40, font=helv36)
     button_3d.pack(pady=10)  # Zentriert den Button vertikal und fügt einen Abstand zwischen den Buttons hinzu
 
