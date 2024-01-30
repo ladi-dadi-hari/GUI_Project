@@ -102,6 +102,7 @@ time_option_mapping = {
 # Filtering function for 2d-plotting
 # Written by: Harris Nuhanovic
 def filter_data(df, deltatime):
+
     df['Timestamp'] = pd.to_datetime(df['Timestamp'])  # Convert 'Timestamp' to datetime object
     end_time = datetime.now()  # Get current time
     start_time = end_time - pd.Timedelta(minutes=deltatime)  # Calculate the start time as the end time minus 30 minutes
@@ -156,6 +157,7 @@ def readData(ser):
 
 # Written by: Harris Nuhanovic
 class MyApp:
+
     def __init__(self, root):
         self.root = root
         self.root.geometry('1200x900')  # Setzt die Größe des Fensters auf 1200x900
@@ -403,8 +405,8 @@ class MyApp:
 
                     euler = calc_euler(euler)
 
-                    roll = euler[1] * toRad  # theta
-                    pitch = euler[0] * toRad  # yaw axis
+                    roll = euler[1] * toRad
+                    pitch = euler[0] * toRad
                     yaw = euler[2] * toRad
 
                     k = vector(cos(yaw) * cos(pitch), sin(pitch), sin(yaw) * cos(pitch))
@@ -419,8 +421,6 @@ class MyApp:
 
                 elif 'quaternions' in data.keys():
 
-                    # quaternionWrite(data)
-
                     scale = (1.0 / (1 << 14))
                     quaternions = np.array(data['quaternions'])
 
@@ -429,6 +429,7 @@ class MyApp:
                     qy = quaternions[2] * scale
                     qz = quaternions[3] * scale
 
+                    #TODO: check if needed
                     sqw = qw * qw
                     sqx = qx * qx
                     sqy = qy * qy
@@ -532,7 +533,7 @@ class MyApp:
 
             plt.close('all')
 
-
+        # TODO: implement exceptions
         except FileNotFoundError as e:
             print()
 
@@ -541,6 +542,7 @@ class MyApp:
 
     # Written by: Harris Nuhanovic
     def on_combobox_change(self, event):
+
         global selected_integer_value
         self.button_choice.pack(pady=10)
         selected_time_option = self.time_combobox.get()
@@ -548,6 +550,7 @@ class MyApp:
 
     # Written by: Harris Nuhanovic
     def on_combobox_comport_select(self, event):
+
         global selected_port
         selected_port = self.combobox_comport.get()
         # You can perform any action with the selected COM port here, e.g., print it
@@ -555,6 +558,7 @@ class MyApp:
 
     # Written by: Harris Nuhanovic
     def open_serial_port(self):
+
         global ser
         ser = serial.Serial()
         ser.port = selected_port
@@ -582,6 +586,7 @@ class MyApp:
 
     # Written by: Harris Nuhanovic
     def on_closing(self):
+
         try:
             ser.close()  # Close the serial port
         except Exception as e:
@@ -594,6 +599,7 @@ class MyApp:
             sys.exit()
 
 if __name__ == '__main__':
+
     root = tk.Tk()
     app = MyApp(root)
     root.mainloop()
