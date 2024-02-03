@@ -1,7 +1,4 @@
 import sys
-import tkinter as tk
-from tkinter import ttk
-import tkinter.font as tkFont
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import vpython as vp
@@ -17,13 +14,15 @@ import pandas as pd
 import threading
 import math
 
-selected_integer_value = 0
+selected_time_difference = 0 # in minutes
 selected_port = None
 ser = None
+toRad = 2 * np.pi / 360
 
 # Written by: Elia Funk
 class BNO055Data:
     def __init__(self):
+        # Initialize instance variables for BNO055 data
         self.thetaM = 0.0
         self.phiM = 0.0
         self.thetaFold = 0.0
@@ -42,12 +41,17 @@ class BNO055Data:
         self.dt = 0.0
         self.millisOld = int(time.time() * 1000)
 
-
+# Create an instance of BNO055Data
 bno055 = BNO055Data()
 
-# Calculation of euler angles
 # Written by: Elia Funk
 def calc_euler(data) -> np.array:
+    """
+        Calculate Euler angles based on accelerometer, gyroscope, and magnetometer data.
+
+        :param data: List of sensor data [accX, accY, accZ, gyrX, gyrY, gyrZ, magX, magY, magZ]
+        :return: Numpy array containing [phi, theta, psi, accX, accY, accZ, gyrX, gyrY, gyrZ, magX, magY, magZ]
+        """
 
     # accelerometer unit:               1 m/s^2 = 100 LSB
     # gyroscope unit:                   1 dps (degree per second) = 16 LSB
@@ -90,7 +94,7 @@ def calc_euler(data) -> np.array:
 
     return np.array([bno055.phi, bno055.theta, bno055.psi, accX, accY, accZ, gyrX/0.01745329251, gyrY/0.01745329251, gyrZ/0.01745329251, magX, magY, magZ])
 
-# Filtering options for 2d-plotting
+# Mapping of time options to their corresponding durations in minutes
 # Written by: Harris Nuhanovic
 time_option_mapping = {
     "24 Stunden": 24 * 60,  # 24 hours in minutes
@@ -102,11 +106,27 @@ time_option_mapping = {
 # Filtering function for 2d-plotting
 # Written by: Harris Nuhanovic
 def filter_data(df, deltatime):
+    """
+    Filter data based on a specified time range.
 
-    df['Timestamp'] = pd.to_datetime(df['Timestamp'])  # Convert 'Timestamp' to datetime object
-    end_time = datetime.now()  # Get current time
-    start_time = end_time - pd.Timedelta(minutes=deltatime)  # Calculate the start time as the end time minus 30 minutes
-    filtered_df = df[(df['Timestamp'] >= start_time) & (df['Timestamp'] <= end_time)]  # Filter based on time range
+    :param df: DataFrame containing timestamped data
+    :param deltatime: Duration of time to consider in minutes for filtering
+    :return: DataFrame containing filtered data
+    """
+
+    # Convert 'Timestamp' column to datetime objects
+    df['Timestamp'] = pd.to_datetime(df['Timestamp'])
+
+    # Get the current time
+    end_time = datetime.now()
+
+    # Calculate the start time as the end time minus the specified time duration
+    start_time = end_time - pd.Timedelta(minutes=deltatime)
+
+    # Filter DataFrame based on the specified time range
+    filtered_df = df[(df['Timestamp'] >= start_time) & (df['Timestamp'] <= end_time)]
+
+    # Return the filtered DataFrame
     return filtered_df
 
 # Written by: Elia Funk
@@ -142,87 +162,108 @@ def eulerWrite(data):
 
 # Written by: Harris Nuhanovic
 def readData(ser):
+    """
+    Read data from a serial connection and process Euler angle data.
+
+    :param ser: Serial connection object
+    """
 
     try:
         while True:
-
+            # Read a line from the serial connection and decode it as utf-8
             line = ser.readline().decode('utf-8').strip()
+
+            # Parse the line as JSON data
             data = json.loads(line)
+
+            # Check if 'euler' key is present in the parsed JSON data
             if 'euler' in data:
+                # Call eulerWrite function to write Euler angle data to a CSV file
                 eulerWrite(data)
 
     except json.JSONDecodeError as e:
-        print(f"Fehler beim Dekodieren der JSON-Daten: {e}")
+        # Handle JSON decoding error
+        print(f"Error decoding JSON data: {e}")
 
 
 # Written by: Harris Nuhanovic
+import tkinter as tk
+from tkinter import ttk
+from tkinter import font as tkFont
+
 class MyApp:
 
     def __init__(self, root):
-        self.root = root
-        self.root.geometry('1200x900')  # Setzt die Größe des Fensters auf 1200x900
-        self.root.configure(bg='white')  # Setzt die Hintergrundfarbe auf Weiß für den hellen Modus
+        """
+        Initialize the main application.
 
-        # Hauptframe
+        :param root: Tkinter root window
+        """
+        self.root = root
+        self.root.geometry('1200x900')  # Set the size of the window to 1200x900
+        self.root.configure(bg='white')  # Set the background color to white for the light mode
+
+        # Main frame
         self.main_frame = tk.Frame(self.root, bg='white')
         self.main_frame.place(relwidth=1, relheight=1)
 
-        # 3D-Visualisierungs-Frame
+        # 3D Visualization Frame
         self.frame_3d = tk.Frame(self.root, bg='white')
         self.frame_3d.place(relwidth=1, relheight=1)
 
-        # 2D-Koordinatensystem-Frame
+        # 2D Coordinate System Frame
         self.frame_2d = tk.Frame(self.root, bg='white')
         self.frame_2d.place(relwidth=1, relheight=1)
 
-        # 2D-Koordinatensysteme-Frame
+        # 2D Coordinate Systems Frame
         self.frame_2d_systems = tk.Frame(self.root, bg='white')
         self.frame_2d_systems.place(relwidth=1, relheight=1)
 
-        # Welcome-Frame
+        # Welcome Frame
         self.frame_welcome = tk.Frame(self.root, bg='white')
         self.frame_welcome.place(relwidth=1, relheight=1)
 
-        # Button-Frame im Hauptframe
+        # Button Frame in the Main Frame
         self.button_frame = tk.Frame(self.main_frame, bg='white')
         self.button_frame.place(relx=0.5, rely=0.5, anchor='center')
 
         self.helv36 = tkFont.Font(family='Helvetica', size=24, weight='bold')
 
-        self.button_3d = tk.Button(self.button_frame, text="3D-Visualisierung", command=lambda: [root.destroy() ,self.open_visualization(ser)], bg='white',
+        # Button for 3D Visualization
+        self.button_3d = tk.Button(self.button_frame, text="3D-Visualisierung", command=lambda: [root.destroy(), self.open_visualization(ser)], bg='white',
                               fg='black', height=10, width=40, font=self.helv36)
-        self.button_3d.pack(pady=10)  # Zentriert den Button vertikal und fügt einen Abstand zwischen den Buttons hinzu
+        self.button_3d.pack(pady=10)
 
         self.time_options = ["24 Stunden", "Eine Minute", "30 Minuten", "48 Stunden"]
         self.time_combobox = ttk.Combobox(self.frame_2d, values=self.time_options, state="readonly")
         self.time_combobox.pack(pady=10)
 
-        # Auswahl-Button, der erscheint, wenn eine Option in der Combobox ausgewählt wurde
+        # Selection Button that appears when an option is selected in the Combobox
         self.button_choice = tk.Button(self.frame_2d, text="Auswahl", command=lambda: [self.show_frame(self.frame_2d_systems), self.plots()],
                                   bg='white', fg='black')
 
         self.time_combobox.bind("<<ComboboxSelected>>", self.on_combobox_change)
         self.button_2d = tk.Button(self.button_frame, text="2D-Koordinatensystem", command=lambda: self.show_frame(self.frame_2d), bg='white',
                               fg='black', height=10, width=40, font=self.helv36)
-        self.button_2d.pack(pady=10)  # Zentriert den Button vertikal und fügt einen Abstand zwischen den Buttons hinzu
+        self.button_2d.pack(pady=10)
 
-        # Zurück-Buttons für die Frames frame_3d und frame_2d
+        # Back Buttons for frames frame_3d and frame_2d
         self.back_button_3d = tk.Button(self.frame_3d, text="Zurück", command=lambda: self.show_frame(self.main_frame), bg='white', fg='black')
-        self.back_button_3d.place(x=0, y=0)  # Positioniert den Button in der linken oberen Ecke
+        self.back_button_3d.place(x=0, y=0)
 
         self.back_button_2d = tk.Button(self.frame_2d, text="Zurück", command=lambda: self.show_frame(self.main_frame), bg='white', fg='black')
-        self.back_button_2d.place(x=0, y=0)  # Positioniert den Button in der linken oberen Ecke
+        self.back_button_2d.place(x=0, y=0)
 
-        # Combobox für den Zeitraum der Datenauswertung
+        # Combobox for the data analysis time period
         self.label_time = tk.Label(self.frame_2d, text="Zeitraum der Datenauswertung", font=self.helv36)
         self.label_time.pack(pady=10)
 
-        # Zurück-Button für den Frame frame_2d_systems
+        # Back Button for the frame frame_2d_systems
         self.back_button_2d_systems = tk.Button(self.frame_2d_systems, text="Zurück", command=lambda: self.show_frame(self.frame_2d),
                                            bg='white', fg='black')
-        self.back_button_2d_systems.place(x=0, y=0)  # Positioniert den Button in der linken oberen Ecke
+        self.back_button_2d_systems.place(x=0, y=0)
 
-        # Com-port frame elemente
+        # Com-port frame elements
         self.com_ports = [f"com{i}" for i in range(21)]
         self.combobox_comport = ttk.Combobox(self.frame_welcome, values=self.com_ports, state="readonly")
         self.combobox_comport.pack(pady=10)
@@ -236,18 +277,29 @@ class MyApp:
 
         self.frame_welcome.pack(expand=True, fill='both')
 
-        # Zeigen Sie den Hauptframe zuerst an
+        # Show the Welcome Frame initially
         self.show_frame(self.frame_welcome)
 
         # Bind the closing event to the on_closing function
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
+
     # Written by: Harris Nuhanovic
     def show_frame(self, frame):
+        """
+        Raise the given frame to the top, making it visible.
+
+        :param frame: Tkinter Frame to be raised
+        """
         frame.tkraise()
 
     # Written by: Harris Nuhanovic
     def open_visualization(self, ser):
+        """
+        Open a 3D visualization using VPython to display components and update their orientation based on data from the COM port.
+
+        :param ser: Serial port connection for reading data
+        """
 
         # Set the scene
         scene = vp.canvas(width=1200, height=600)
@@ -390,31 +442,32 @@ class MyApp:
                             ],
                            pos=vec(0, 0, 15), origin=vec(0, 0, 0))
 
+        # Continuously update the orientation of 3D objects based on Euler angles from the COM port data
         while True:
-            # Daten vom COM-Port lesen
+            # Read data from the COM port
             line = ser.readline().decode('utf-8').strip()
 
             try:
                 data = json.loads(line)
 
                 if 'euler' in data.keys():
-
-                    toRad = 2 * np.pi / 360
-
+                    # Extract Euler angles and update orientation
                     euler = np.array(data['euler'])
-
                     euler = calc_euler(euler)
 
+                    # Convert Euler angles to rotation
                     roll = euler[1] * toRad
                     pitch = euler[0] * toRad
                     yaw = euler[2] * toRad
 
+                    # Calculate unit vector components based on Euler angles
                     k = vector(cos(yaw) * cos(pitch), sin(pitch), sin(yaw) * cos(pitch))
                     y = vector(0, 1, 0)
                     s = cross(k, y)
                     v = cross(s, k)
                     vrot = v * cos(roll) + cross(k, v) * sin(roll)
 
+                    # Update object orientation in the visualization
                     fhObj_2.axis = k
                     fhObj_2.up = vrot
 
@@ -481,7 +534,7 @@ class MyApp:
             # Daten aus der CSV-Datei lesen
             df = pd.read_csv('euler_data.csv', parse_dates=['Timestamp'])
 
-            filtered_data = filter_data(df, selected_integer_value)
+            filtered_data = filter_data(df, selected_time_difference)
 
             # Plot für Acc_X, Acc_Y und Acc_Z erstellen
             fig2 = plt.figure(figsize=(5, 3))
@@ -533,75 +586,105 @@ class MyApp:
 
             plt.close('all')
 
-        # TODO: implement exceptions
         except FileNotFoundError as e:
-            print()
+            print(f"Fehler: Die angegebene Datei wurde nicht gefunden. Details: {e}")
 
         except UnboundLocalError as e:
-            print()
+            print(f"Fehler: Versuch, auf eine nicht gebundene lokale Variable zuzugreifen. Details: {e}")
 
     # Written by: Harris Nuhanovic
     def on_combobox_change(self, event):
+        # Declare a global variable to store the selected time value in minutes
+        global selected_time_difference
 
-        global selected_integer_value
+        # Pack the "Auswahl" button to make it visible
         self.button_choice.pack(pady=10)
+
+        # Get the selected time option from the combobox
         selected_time_option = self.time_combobox.get()
-        selected_integer_value = time_option_mapping.get(selected_time_option, 0)
+
+        # Use the time_option_mapping dictionary to get the corresponding time value in minutes
+        # If the selected option is not found, default to 0 minutes
+        selected_time_difference = time_option_mapping.get(selected_time_option, 0)
 
     # Written by: Harris Nuhanovic
     def on_combobox_comport_select(self, event):
-
+        # Declare a global variable to store the selected COM port
         global selected_port
+
+        # Get the selected COM port from the combobox
         selected_port = self.combobox_comport.get()
-        # You can perform any action with the selected COM port here, e.g., print it
+
+        # Perform any desired action with the selected COM port
+        # Here, it prints the selected COM port to the console
         print(f"Selected COM port: {selected_port}")
 
     # Written by: Harris Nuhanovic
     def open_serial_port(self):
-
+        # Declare a global variable to store the serial connection
         global ser
+
+        # Create a serial object
         ser = serial.Serial()
+
+        # Set the port and baudrate based on the selected COM port
         ser.port = selected_port
         ser.baudrate = 115200
 
+        # Close the serial port if it is already open
         if ser.isOpen():
             ser.close()
 
         try:
+            # Open the serial port
             ser.open()
         except serial.SerialException as e:
+            # Handle exceptions if the serial port cannot be opened
             print(f"Fehler beim Öffnen des seriellen Ports: {e}")
             tk.messagebox.showerror("Fehler", "Bitte wählen Sie einen COM-Port, der verwendet wird.",
                                     parent=self.frame_welcome)
             return False
 
+        # Check if the serial port is successfully opened
         if ser.isOpen():
+            # Create a new thread for reading data from the serial port
             thread = threading.Thread(target=readData, args=(ser,))
             thread.start()
+
+            # Switch to the main frame and return True indicating success
             self.show_frame(self.main_frame)
             return True
         else:
+            # Display an error message if the serial port could not be opened
             tk.messagebox.showerror("Fehler", "Der COM-Port konnte nicht geöffnet werden.", parent=self.frame_welcome)
             return False
 
     # Written by: Harris Nuhanovic
     def on_closing(self):
-
         try:
-            ser.close()  # Close the serial port
+            # Attempt to close the serial port
+            ser.close()
         except Exception as e:
+            # Handle exceptions if there's an issue closing the serial port
             print(f"Fehler beim schließen des com-ports: {e}")
-
         finally:
+            # Check if the user wants to quit by displaying a confirmation dialog
             if tk.messagebox.askokcancel("Quit", "Do you want to quit?"):
+                # If confirmed, destroy the Tkinter root window, ending the mainloop
                 root.destroy()
-            root.destroy()  # Destroy the Tkinter root window, ending the mainloop
+            # Explicitly destroy the root window (even if not confirmed) and exit the program
+            root.destroy()
             sys.exit()
 
-if __name__ == '__main__':
 
+if __name__ == '__main__':
+    # Create a Tkinter root window
     root = tk.Tk()
+
+    # Initialize the application with the root window
     app = MyApp(root)
+
+    # Start the main event loop
     root.mainloop()
 
 
