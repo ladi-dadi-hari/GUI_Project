@@ -480,6 +480,10 @@ class MyApp:
 
                 elif 'quaternions' in data.keys():
 
+                    # referenced from Dipl. Inf. Markus Krauße
+                    # Youtube Channel: WSN & IoT
+                    # https://www.youtube.com/watch?v=uJVzkl73A74&t=1174s
+
                     scale = (1.0 / (1 << 14))
                     quaternions = np.array(data['quaternions'])
 
@@ -487,12 +491,6 @@ class MyApp:
                     qx = quaternions[1] * scale
                     qy = quaternions[2] * scale
                     qz = quaternions[3] * scale
-
-                    #TODO: check if needed
-                    sqw = qw * qw
-                    sqx = qx * qx
-                    sqy = qy * qy
-                    sqz = qz * qz
 
                     roll = 0
                     yaw = 0
