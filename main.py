@@ -188,6 +188,13 @@ def readData(ser):
         # Handle JSON decoding error
         print(f"Error decoding JSON data: {e}")
 
+def open_serial_port():
+
+        global ser
+        ser = serial.Serial(selected_port, 115200)
+        thread = threading.Thread(target=readData, args=(ser,))
+        thread.start()
+
 
 # Written by: Harris Nuhanovic
 class MyApp:
@@ -653,10 +660,7 @@ class MyApp:
             # Switch to the main frame and return True indicating success
             self.show_frame(self.main_frame)
             return True
-        else:
-            # Display an error message if the serial port could not be opened
-            tk.messagebox.showerror("Fehler", "Der COM-Port konnte nicht geöffnet werden.", parent=self.frame_welcome)
-            return False
+
 
     # Written by: Harris Nuhanovic
     def on_closing(self):
