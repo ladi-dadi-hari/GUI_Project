@@ -1,6 +1,9 @@
 import sys
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import tkinter as tk
+from tkinter import ttk
+from tkinter import font as tkFont
 import vpython as vp
 from vpython import *
 import numpy as np
@@ -187,10 +190,6 @@ def readData(ser):
 
 
 # Written by: Harris Nuhanovic
-import tkinter as tk
-from tkinter import ttk
-from tkinter import font as tkFont
-
 class MyApp:
 
     def __init__(self, root):
