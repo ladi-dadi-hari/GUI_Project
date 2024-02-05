@@ -661,6 +661,22 @@ class MyApp:
 
 
     # Written by: Harris Nuhanovic
+    # def on_closing(self):
+    #     try:
+    #         # Attempt to close the serial port
+    #         ser.close()
+    #     except Exception as e:
+    #         # Handle exceptions if there's an issue closing the serial port
+    #         print(f"Fehler beim schließen des com-ports: {e}")
+    #     finally:
+    #         # Check if the user wants to quit by displaying a confirmation dialog
+    #         if tk.messagebox.askokcancel("Quit", "Do you want to quit?"):
+    #             # If confirmed, destroy the Tkinter root window, ending the mainloop
+    #             root.destroy()
+    #         # Explicitly destroy the root window (even if not confirmed) and exit the program
+    #         root.destroy()
+    #         sys.exit()
+
     def on_closing(self):
         try:
             # Attempt to close the serial port
@@ -668,12 +684,9 @@ class MyApp:
         except Exception as e:
             # Handle exceptions if there's an issue closing the serial port
             print(f"Fehler beim schließen des com-ports: {e}")
-        finally:
-            # Check if the user wants to quit by displaying a confirmation dialog
-            if tk.messagebox.askokcancel("Quit", "Do you want to quit?"):
-                # If confirmed, destroy the Tkinter root window, ending the mainloop
-                root.destroy()
-            # Explicitly destroy the root window (even if not confirmed) and exit the program
+        # Check if the user wants to quit by displaying a confirmation dialog
+        if tk.messagebox.askokcancel("Quit", "Do you want to quit?"):
+            # If confirmed, destroy the Tkinter root window, ending the mainloop
             root.destroy()
             sys.exit()
 
